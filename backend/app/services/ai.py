@@ -45,3 +45,27 @@ def stream_chat(user, messages: list, db: Session):
     ) as stream:
         for text in stream.text_stream:
             yield text
+            
+def get_progressive_overload_suggestions(user, db: Session):
+    from app.models.session import WorkoutSession, ExerciseLog
+    sessions = db.query(WorkoutSession).filter(WorkoutSession.user_id == user.id).limit(6).all()
+    if len(sessions) < 2: return []
+    history = {}
+    for s in sessions:
+        for log in db.query(ExerciseLog).filter(ExerciseLog.session_id == s.id).all():
+            history.setdefault(log.exercise_name, []).append(
+                {"date": str(s.session_date), "sets": log.sets_data}
+            )
+    if not history: return []
+    prompt = f"""Analyze workout history. Return ONLY a JSON array:
+    [{{"exercise": "name", "suggestion": "specific next-session suggestion"}}]
+    History: {json.dumps(history)}"""
+    response = client.messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=500,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    answer = response.content[0].text.strip()
+    
+    return json.loads(answer)
