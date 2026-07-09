@@ -5,8 +5,8 @@ import datetime
 client = TestClient(app)
 
 def get_token():
-    client.post("/auth/register", json={"email": "sess@example.com", "password": "pass123"})
-    r = client.post("/auth/login", json={"email": "sess@example.com", "password": "pass123"}).json()["access_token"]
+    client.post("/auth/register", json={"email": "sess@example.com", "password": "pass1234"})
+    r = client.post("/auth/login", json={"email": "sess@example.com", "password": "pass1234"}).json()["access_token"]
     client.put("/users/me", json={"age": 25, "goal": "gain muscles", "level": "intermediate", "days_per_week": 3, "equipment": "gym", "weight_kg": 79.0}, headers={"Authorization": f"Bearer {r}"})
     return r
 

@@ -1,10 +1,10 @@
-from pydantic import EmailStr, BaseModel, ConfigDict
+from pydantic import EmailStr, BaseModel, ConfigDict, Field
 from typing import Optional
 import uuid
 
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
 
 class UserLogin(BaseModel):
     email: EmailStr

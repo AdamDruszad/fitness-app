@@ -4,8 +4,8 @@ from fastapi.testclient import TestClient
 client = TestClient(app)
 
 def get_token():
-    client.post("/auth/register", json={"email": "profile@example.com", "password": "pass123"})
-    return client.post("/auth/login", json={"email": "profile@example.com", "password": "pass123"}).json()["access_token"]
+    client.post("/auth/register", json={"email": "profile@example.com", "password": "pass1234"})
+    return client.post("/auth/login", json={"email": "profile@example.com", "password": "pass1234"}).json()["access_token"]
 
 def test_get_profile_unauthenticated():
     assert client.get("/users/me").status_code == 401
