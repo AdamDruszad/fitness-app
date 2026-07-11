@@ -2,7 +2,7 @@
 
 @theme {
   --color-base: #16171d;
-  --color-surface: #1f2028;
+  --color-surface: rgba(31, 32, 40, .5);
   --color-input: #24252e;
   --color-border-subtle: rgba(255, 255, 255, 0.08);
   --color-text-main: #f3f4f6;
@@ -13,9 +13,9 @@
 
 .light {
   --color-base: #faf9f7;
-  --color-surface: #ffffff;
+  --color-surface: #ffffff60;
   --color-input: #ffffff;
-  --color-border-subtle: #e5e4e1;
+  --color-border-subtle: rgba(0, 0, 0, 0.508);
   --color-text-main: #18181a;
   --color-text-muted: #6b6b68;
   --color-grid-line: #000000;

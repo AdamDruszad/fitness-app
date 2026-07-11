@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import client from "../api/client";
-import { IconMoon, IconMail, IconLock } from "@tabler/icons-react";
+import { IconMoon, IconMail, IconLock, IconSun } from "@tabler/icons-react";
+import { useTheme } from "../hooks/useTheme";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const { data } = await client.post("/auth/login", { email, password });
       localStorage.setItem("token", data.access_token);
-      window.location.href = '/';
+      window.location.href = "/";
     } catch {
       setError("Invalid email or password");
     }
@@ -25,13 +27,15 @@ export default function Login() {
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px)",
+            "linear-gradient(to right, var(--color-grid-line) 2px, transparent 2px), linear-gradient(to bottom, var(--color-grid-line) 2px, transparent 2px)",
           backgroundSize: "40px 40px",
         }}
       />
 
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-accent/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-accent/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-120 right-120 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-120 left-120 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
 
       <div className="bg-surface rounded-2xl p-8 w-full max-w-sm border border-border-subtle relative z-10">
         <div className="flex justify-between items-center mb-6">
@@ -43,9 +47,14 @@ export default function Login() {
           </div>
           <button
             aria-label="Change Theme"
-            className="bg-input rounded-full p-2.5 border border-border-subtle shrink-0 cursor-pointer hover:bg-gray-800"
+            className="bg-input rounded-full p-2.5 border border-border-subtle shrink-0 cursor-pointer hover:bg-surface/50"
+            onClick={toggleTheme}
           >
-            <IconMoon className="w-4 h-4 text-text-main" stroke={2} />
+            {theme === "dark" ? (
+              <IconMoon className="w-4 h-4 text-text-main" stroke={2} />
+            ) : (
+              <IconSun className="w-4 h-4 text-text-main" stroke={2} />
+            )}
           </button>
         </div>
 
@@ -68,7 +77,10 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3">
           <div className="relative">
-            <IconMail className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" stroke={2} />
+            <IconMail
+              className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
+              stroke={2}
+            />
             <input
               aria-label="Email"
               className="w-full bg-input border border-border-subtle text-text-main placeholder:text-text-muted rounded-xl pl-10 pr-3 py-3 outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/30 transition"
@@ -81,7 +93,10 @@ export default function Login() {
           </div>
 
           <div className="relative">
-            <IconLock className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" stroke={2} />
+            <IconLock
+              className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
+              stroke={2}
+            />
             <input
               aria-label="Password"
               className="w-full bg-input border border-border-subtle text-text-main placeholder:text-text-muted rounded-xl pl-10 pr-3 py-3 outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/30 transition"
