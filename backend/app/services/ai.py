@@ -1,3 +1,4 @@
+from app.routers import plans
 import json
 from anthropic import Anthropic
 from app.config import settings
@@ -19,9 +20,12 @@ def generate_plan(user) -> dict:
         system=PLAN_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": profile}]
     )
-    
     answ = response.content[0].text.strip()
-    
+    if answ.startswith("```"):
+        answ = answ.split("\n", 1)[1]
+        answ = answ.rsplit("```", 1)[0]
+    answ = answ.strip()
+    print(f"RAW CLAUDE RESPONSE: {answ!r}")
     return json.loads(answ)
 
 def build_coach_system_prompt(user, db: Session) -> str:

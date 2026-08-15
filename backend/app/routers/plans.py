@@ -18,7 +18,8 @@ def generate(current_user: User = Depends(get_current_user), db: Session = Depen
     
     try:
         plan = generate_plan(current_user)
-    except:
+    except Exception as e:
+        print(f"PLAN GENERATION ERROR: {e}")
         raise HTTPException(503, "Something went wrong")
         
     wo_plan = WorkoutPlan()
