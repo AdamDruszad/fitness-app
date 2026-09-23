@@ -27,8 +27,8 @@ export default function Layout({ children }) {
                 <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl" />
                 <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl" />
             </div>
-            
-            <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-base/80 backdrop-blur-md">
+
+            <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-base/40 backdrop-blur-md">
                 <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-7 bg-brand-accent -skew-x-12"></span>
                     <span className="text-text-main tracking-tight text-2xl font-bold">

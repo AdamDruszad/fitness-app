@@ -89,7 +89,7 @@ export default function Dashboard() {
                 {plan?.plan_data?.days?.map((dayPlan, idx) => {
                   const isToday = dayPlan.day === todayName;
                   return (
-                    <div key={idx} className={`border rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer active:scale-[0.98] ${isToday ? 'bg-brand-accent/10 border-brand-accent' : 'bg-surface/70 border-border-subtle hover:border-text-muted/30 hover:bg-surface'}`}>
+                    <div key={idx} onClick={() => navigate('/log', { state: { day: dayPlan.day } })} className={`border rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer active:scale-[0.98] ${isToday ? 'bg-brand-accent/10 border-brand-accent' : 'bg-surface/70 border-border-subtle hover:border-text-muted/30 hover:bg-surface'}`}>
                       <div className="flex items-center gap-3">
                         <IconBarbell className={isToday ? 'text-brand-accent' : 'text-text-muted'} size={22} stroke={1.5} />
                         <div>
