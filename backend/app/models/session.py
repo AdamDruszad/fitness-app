@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Date
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -12,6 +13,10 @@ class WorkoutSession(Base):
     session_date = Column(Date)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # relationship() required so Pydantic (from_attributes=True) can read exercise_logs;
+    # without this, SessionResponse.exercise_logs always silently returned [] regardless
+    # of actual logged exercises — the root cause of "0 exercises" in the Dashboard.
+    exercise_logs = relationship("ExerciseLog", back_populates="session", lazy="selectin")
 
 class ExerciseLog(Base):
     __tablename__ = "exercise_logs"
@@ -19,3 +24,4 @@ class ExerciseLog(Base):
     session_id = Column(UUID(as_uuid=True), ForeignKey("workout_sessions.id"), nullable=False)
     exercise_name = Column(String)
     sets_data = Column(JSONB)
+    session = relationship("WorkoutSession", back_populates="exercise_logs")

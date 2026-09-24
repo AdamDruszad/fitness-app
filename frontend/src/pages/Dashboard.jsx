@@ -7,8 +7,10 @@ import { useNavigate } from "react-router";
 export default function Dashboard() {
   const [plan, setPlan] = useState();
   const [sessions, setSessions] = useState();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionsError, setSessionsError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,19 +31,21 @@ export default function Dashboard() {
         }
       })
       .finally(() => setLoading(false))
-    //get users session
+    //get users sessions
+    setSessionsLoading(true);
     client.get('/sessions')
       .then(r => setSessions(r.data))
-      .catch(() => setSessions([]))
+      .catch(() => {
+        // GET /sessions always returns 200+[] when empty, never 404;
+        // any error here is a real failure (network, 500, etc.)
+        setSessionsError("Could not load sessions");
+        setSessions([]);
+      })
+      .finally(() => setSessionsLoading(false))
   }, [])
   const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const exactMatchPlan = plan?.plan_data?.days?.find(d => d.day === todayName);
   const todayPlan = exactMatchPlan ?? plan?.plan_data?.days?.[0];
-  
-  const currentWeek = plan?.created_at ? Math.min(
-    Math.floor((new Date() - new Date(plan.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1,
-    plan?.plan_data?.weeks || 8
-  ) : 1;
   const totalWeeks = plan?.plan_data?.weeks || 8;
 
   return (
@@ -78,7 +82,7 @@ export default function Dashboard() {
               <span className="text-brand-accent/70 text-sm">{todayPlan.exercises?.length || 0} exercises</span>
             </div>
 
-            <button type="button" className="flex items-center justify-center gap-2 py-3.5 px-4 active:scale-[0.98] transition text-[15px] font-bold text-white rounded-xl bg-brand-accent hover:bg-brand-accent/90 cursor-pointer" onClick={() => { navigate("/log") }}>
+            <button type="button" className="flex items-center justify-center gap-2 py-3.5 px-4 active:scale-[0.98] transition text-[15px] font-bold text-white rounded-xl bg-brand-accent hover:bg-brand-accent/90 cursor-pointer" onClick={() => navigate('/log', { state: { day: todayPlan.day } })}>
               <IconPlayerPlayFilled size={20} />
               Start today's workout
             </button>
@@ -106,22 +110,40 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-3 gap-2.5 mt-2">
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
-                <div className="text-xs text-text-muted">Plan week</div>
-                <div className="text-2xl font-bold mt-1 text-text-main">{currentWeek}/{totalWeeks}</div>
+                <div className="text-xs text-text-muted">Plan length</div>
+                <div className="text-2xl font-bold mt-1 text-text-main">{totalWeeks}w</div>
               </div>
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
                 <div className="text-xs text-text-muted">This week</div>
-                <div className="text-2xl font-bold mt-1 text-text-main">{sessions?.filter(s => (new Date() - new Date(s.session_date)) / (1000 * 60 * 60 * 24) <= 7)?.length || 0}</div>
+                <div className="text-2xl font-bold mt-1 text-text-main">
+                  {sessionsLoading
+                    ? <span className="text-sm text-text-muted animate-pulse">—</span>
+                    : sessionsError
+                      ? <span className="text-sm text-text-muted">—</span>
+                      : sessions?.filter(s => (new Date() - new Date(s.session_date)) / (1000 * 60 * 60 * 24) <= 7)?.length ?? 0}
+                </div>
               </div>
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
                 <div className="text-xs text-text-muted">Logged</div>
-                <div className="text-2xl font-bold mt-1 text-text-main">{sessions?.length || 0}</div>
+                <div className="text-2xl font-bold mt-1 text-text-main">
+                  {sessionsLoading
+                    ? <span className="text-sm text-text-muted animate-pulse">—</span>
+                    : sessionsError
+                      ? <span className="text-sm text-text-muted">—</span>
+                      : sessions?.length ?? 0}
+                </div>
               </div>
             </div>
 
             <div className="mt-2">
               <div className="text-[13px] text-text-muted font-semibold mb-2.5">Recent sessions</div>
-              {sessions && sessions.length > 0 ? (
+              {sessionsError ? (
+                <p className="text-xs text-red-400 text-center py-4">{sessionsError}</p>
+              ) : sessionsLoading ? (
+                <div className="flex flex-col gap-2">
+                  {[1, 2].map(i => <div key={i} className="bg-surface/70 border border-border-subtle rounded-xl px-3.5 py-3 h-11 animate-pulse" />)}
+                </div>
+              ) : sessions && sessions.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {sessions.slice(0, 3).map((s, idx) => (
                     <div key={idx} className="bg-surface/70 border border-border-subtle rounded-xl px-3.5 py-3 flex items-center justify-between">
