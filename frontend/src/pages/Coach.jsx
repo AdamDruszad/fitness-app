@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import client from "../api/client";
 import Layout from "../components/Layout";
 import { IconSend2, IconRobot, IconUser, IconLoader2 } from "@tabler/icons-react";
+import ReactMarkdown from "react-markdown";
 
 export default function Coach() {
   const [messages, setMessages] = useState([]);
@@ -204,13 +205,13 @@ export default function Coach() {
 
                 {/* Bubble */}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words ${
+                  className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
                     msg.role === "user"
-                      ? "bg-brand-accent text-white rounded-tr-md"
-                      : "bg-white/[0.04] border border-border-subtle text-text-main rounded-tl-md"
+                      ? "bg-brand-accent text-white rounded-tr-md whitespace-pre-wrap"
+                      : "bg-white/[0.04] border border-border-subtle text-text-main rounded-tl-md markdown-body"
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === "user" ? msg.content : <ReactMarkdown>{msg.content}</ReactMarkdown>}
                   {msg.role === "assistant" &&
                     streaming &&
                     msg === messages[messages.length - 1] && (
