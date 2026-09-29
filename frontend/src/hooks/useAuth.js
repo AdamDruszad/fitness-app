@@ -1,53 +1,28 @@
 /**
  * @file useAuth.js
- * @description Custom React hook managing user authentication state, session validation,
- * and user logout operations.
+ * @description Custom React hook providing access to shared authentication state and actions.
  */
 
-import { useState, useEffect } from 'react';
-import client from '../api/client';
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 /**
  * useAuth hook
  * 
- * Fetches the authenticated user profile from /users/me on component mount.
- * Provides loading status while the session check is in flight.
+ * Provides authenticated user profile, loading state, and session management handlers.
  * 
  * @returns {{
  *   user: Object|null,
  *   loading: boolean,
- *   logout: () => void
+ *   login: (token: string) => Promise<void>,
+ *   logout: () => void,
+ *   refetchUser: () => Promise<void>
  * }}
  */
 export function useAuth() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    // Verify token validity by requesting profile
-    client.get('/users/me')
-      .then((response) => setUser(response.data))
-      .catch(() => {
-        // If profile fetch fails, purge bad token
-        localStorage.removeItem('token');
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  /**
-   * Clears the user token from local storage and redirects to login page.
-   */
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    window.location.href = '/login';
-  };
-
-  return { user, loading, logout };
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }
