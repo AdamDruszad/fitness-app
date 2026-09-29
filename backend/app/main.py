@@ -6,15 +6,30 @@ registers all feature routers, and defines basic health check endpoints.
 """
 
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.database import engine, Base
+import app.models  # noqa: F401 - Register models with Base.metadata
 from app.routers import auth, users, plans, chat, sessions, progress
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifecycle manager.
+    Ensures all database schema tables exist before serving traffic.
+    """
+    Base.metadata.create_all(bind=engine)
+    yield
+
 
 # Initialize FastAPI application instance
 app = FastAPI(
     title="Fitness App API",
     description="Backend API for personalized AI workouts, workout logging, progress analytics, and coach chat.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Parse allowed origins from environment variable if provided, with local fallbacks
