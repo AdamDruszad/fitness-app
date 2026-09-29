@@ -1,3 +1,10 @@
+/**
+ * @file Register.jsx
+ * @description New user registration page component.
+ * Validates user input (email format and 8+ character password), sends registration request,
+ * stores the issued JWT token in localStorage, and navigates immediately to the onboarding flow.
+ */
+
 import { useState } from "react";
 import { Link } from "react-router";
 import client from "../api/client";
@@ -15,13 +22,18 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const {theme, toggleTheme} = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
+  /**
+   * Handles new account registration form submission.
+   * Calls /auth/register, sets local storage token, and redirects to /onboarding.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     setError("");
+
     try {
       const { data } = await client.post("/auth/register", { email, password });
       localStorage.setItem("token", data.access_token);
@@ -35,6 +47,7 @@ export default function Register() {
 
   return (
     <div className="bg-base h-screen flex justify-center items-center px-4 relative overflow-hidden">
+      {/* Decorative ambient background elements */}
       <div
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
@@ -43,12 +56,10 @@ export default function Register() {
           backgroundSize: "40px 40px",
         }}
       />
-
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-120 right-120 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-120 left-120 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Registration Card Form */}
       <div className="bg-surface rounded-2xl p-8 w-full max-w-sm border border-border-subtle relative z-10">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
@@ -57,6 +68,7 @@ export default function Register() {
               FitAI
             </span>
           </div>
+          {/* Theme switcher toggle */}
           <button
             aria-label="Change Theme"
             className="bg-input rounded-full p-2.5 border border-border-subtle shrink-0 cursor-pointer hover:bg-surface/50"
@@ -70,6 +82,7 @@ export default function Register() {
           </button>
         </div>
 
+        {/* Pulse waveform accent icon */}
         <svg
           className="w-full h-8 mb-6 block text-brand-accent"
           viewBox="0 0 292 32"
@@ -92,6 +105,7 @@ export default function Register() {
           Get your own personalized AI workout plan.
         </p>
 
+        {/* Error notification banner */}
         {error && (
           <div className="flex items-center gap-2 text-red-400 text-sm border border-red-800 rounded-lg px-3 py-2 -mt-1 mb-4">
             <IconAlertCircle className="w-4 h-4 shrink-0" stroke={2} />
@@ -100,6 +114,7 @@ export default function Register() {
         )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3">
+          {/* Email field */}
           <div className="relative">
             <IconMail
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -116,6 +131,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Password field with minimum length requirement */}
           <div className="relative">
             <IconLock
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -133,6 +149,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Submit action button */}
           <button
             type="submit"
             disabled={isSubmitting}

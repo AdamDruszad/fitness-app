@@ -1,3 +1,12 @@
+/**
+ * @file Progress.jsx
+ * @description Fitness progress and analytics dashboard.
+ * Computes workout volume metrics (total workouts, weekly sessions, total exercises logged),
+ * queries AI progressive overload recommendations, lists distinct exercises with
+ * personal bests (max weight kg, total volume), and displays drill-down chronological
+ * performance histories for selected exercises.
+ */
+
 import Layout from "../components/Layout";
 import { useState, useEffect } from "react";
 import client from "../api/client";
@@ -22,13 +31,18 @@ export default function Progress() {
   const [exerciseHistory, setExerciseHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  /**
+   * Loads workout sessions and AI progressive overload suggestions on mount.
+   */
   useEffect(() => {
+    // 1. Fetch all logged workout sessions
     client
       .get("/sessions")
       .then((r) => setSessions(r.data))
       .catch(() => setError("Could not load sessions"))
       .finally(() => setLoading(false));
 
+    // 2. Fetch AI progressive overload coaching suggestions
     client
       .get("/progress/suggestions")
       .then((r) => setSuggestions(r.data.suggestions || []))
@@ -36,7 +50,7 @@ export default function Progress() {
       .finally(() => setSuggestionsLoading(false));
   }, []);
 
-  // Collect all unique exercise names from sessions
+  // Compute unique list of all exercises logged across all sessions
   const allExercises = [
     ...new Set(
       sessions.flatMap((s) =>
@@ -45,7 +59,12 @@ export default function Progress() {
     ),
   ];
 
-  // Per-exercise stats from loaded sessions
+  /**
+   * Calculates aggregate stats for a specific exercise across all past sessions.
+   * 
+   * @param {string} exerciseName - Name of the exercise to analyze.
+   * @returns {{ totalSets: number, maxWeight: number, totalReps: number, sessionCount: number }}
+   */
   function getExerciseStats(exerciseName) {
     let totalSets = 0;
     let maxWeight = 0;
@@ -70,7 +89,12 @@ export default function Progress() {
     return { totalSets, maxWeight, totalReps, sessionCount };
   }
 
-  // Load exercise-specific history
+  /**
+   * Fetches chronological set history for a single exercise.
+   * Toggles drawer if same exercise is clicked twice.
+   * 
+   * @param {string} name - Exercise name.
+   */
   function loadExerciseHistory(name) {
     if (selectedExercise === name) {
       setSelectedExercise(null);
@@ -86,7 +110,7 @@ export default function Progress() {
       .finally(() => setHistoryLoading(false));
   }
 
-  // Overall stats
+  // Top-level summary metric calculations
   const totalSessions = sessions.length;
   const thisWeekSessions = sessions.filter(
     (s) =>
@@ -134,6 +158,7 @@ export default function Progress() {
             </p>
           </div>
         ) : sessions.length === 0 ? (
+          /* Empty State */
           <div className="bg-surface/40 border border-border-subtle border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center gap-3">
             <IconMoodEmpty
               size={36}
@@ -147,7 +172,7 @@ export default function Progress() {
           </div>
         ) : (
           <>
-            {/* Overview stats */}
+            {/* Aggregate Volume KPI Cards */}
             <div className="grid grid-cols-3 gap-2.5">
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
                 <div className="text-xs text-text-muted flex items-center gap-1">
@@ -178,7 +203,7 @@ export default function Progress() {
               </div>
             </div>
 
-            {/* AI Suggestions */}
+            {/* AI Progressive Overload Suggestions Card */}
             {suggestionsLoading ? (
               <div className="bg-surface/50 rounded-xl p-4 border border-border-subtle animate-pulse">
                 <div className="h-4 w-40 bg-border-subtle rounded mb-3" />
@@ -214,7 +239,7 @@ export default function Progress() {
               </div>
             ) : null}
 
-            {/* Exercise list */}
+            {/* Exercises List and Drill-down Drawer */}
             <div>
               <div className="text-[13px] text-text-muted font-semibold mb-2.5">
                 Exercises ({allExercises.length})
@@ -267,7 +292,7 @@ export default function Progress() {
                         />
                       </button>
 
-                      {/* Expanded exercise history */}
+                      {/* Expanded Drill-down Performance View */}
                       {isSelected && (
                         <div className="ml-4 mt-2 mb-1 border-l-2 border-brand-accent/30 pl-4">
                           {historyLoading ? (
@@ -324,7 +349,7 @@ export default function Progress() {
               </div>
             </div>
 
-            {/* Recent sessions list */}
+            {/* Recent Sessions List */}
             <div>
               <div className="text-[13px] text-text-muted font-semibold mb-2.5">
                 Recent sessions
