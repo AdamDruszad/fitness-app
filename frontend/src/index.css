@@ -15,7 +15,7 @@
   --color-base: #faf9f7;
   --color-surface: #ffffff60;
   --color-input: #ffffff;
-  --color-border-subtle: rgba(0, 0, 0, 0.508);
+  --color-border-subtle: rgba(0, 0, 0, 0.1);
   --color-text-main: #18181a;
   --color-text-muted: #6b6b68;
   --color-grid-line: #000000;
@@ -25,7 +25,7 @@ html, body, #root {
   margin: 0;
   padding: 0;
   height: 100%;
-  background-color: #161616;
+  background-color: var(--color-base);
 }
 
 /* Hide number input spinners */
@@ -38,4 +38,13 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+
+/* Hide horizontal scrollbar on day tabs */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

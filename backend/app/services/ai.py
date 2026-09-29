@@ -1,4 +1,3 @@
-from app.routers import plans
 import json
 from anthropic import Anthropic
 from app.config import settings
@@ -11,6 +10,14 @@ Return ONLY valid JSON, no markdown, no explanation. Schema:
 {"weeks": <int>, "days": [{"day": "<name>", "focus": "<focus>", "exercises": 
 [{"name": "<name>", "sets": <int>, "reps": "<e.g. 6-8>", "rest_seconds": <int>}]}]}"""
 
+def _strip_code_fences(text: str) -> str:
+    """Remove optional markdown code fences (```json ... ```) from AI output."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        text = text.rsplit("```", 1)[0]
+    return text.strip()
+
 def generate_plan(user) -> dict:
     profile = f"Age: {user.age}, Gender: {user.gender}, Weight_kg: {user.weight_kg}, Goal: {user.goal}, Level: {user.level}, Days_per_week: {user.days_per_week}, Equipment: {user.equipment}, Injuries: {user.injuries}"
     
@@ -21,11 +28,7 @@ def generate_plan(user) -> dict:
         messages=[{"role": "user", "content": profile}]
     )
     answ = response.content[0].text.strip()
-    if answ.startswith("```"):
-        answ = answ.split("\n", 1)[1]
-        answ = answ.rsplit("```", 1)[0]
-    answ = answ.strip()
-    print(f"RAW CLAUDE RESPONSE: {answ!r}")
+    answ = _strip_code_fences(answ)
     return json.loads(answ)
 
 def build_coach_system_prompt(user, db: Session) -> str:
@@ -35,9 +38,23 @@ def build_coach_system_prompt(user, db: Session) -> str:
     
     w_sessions = db.query(WorkoutSession).filter(WorkoutSession.user_id == user.id).order_by(WorkoutSession.session_date.desc()).limit(3).all()
     
-    profile = f"Age: {user.age}, Gender: {user.gender}, Weight_kg: {user.weight_kg}, Goal: {user.goal}, Level: {user.level}, Days_per_week: {user.days_per_week}, Equipment: {user.equipment}, Injuries: {user.injuries}, Plan: {json.dumps(active_plan.plan_data) if active_plan else 'none'}, Sessions: {w_sessions}"
+    # Build a serialisable summary of recent sessions (the ORM objects are not
+    # directly JSON-friendly, which previously produced unhelpful repr strings).
+    sessions_summary = []
+    for s in w_sessions:
+        exercises = []
+        for log in db.query(ExerciseLog).filter(ExerciseLog.session_id == s.id).all():
+            exercises.append({"exercise": log.exercise_name, "sets": log.sets_data})
+        sessions_summary.append({"date": str(s.session_date), "exercises": exercises})
     
-    return profile
+    profile = f"Age: {user.age}, Gender: {user.gender}, Weight_kg: {user.weight_kg}, Goal: {user.goal}, Level: {user.level}, Days_per_week: {user.days_per_week}, Equipment: {user.equipment}, Injuries: {user.injuries}, Plan: {json.dumps(active_plan.plan_data) if active_plan else 'none'}, Recent sessions: {json.dumps(sessions_summary)}"
+    
+    return f"""You are FitAI, an expert AI fitness coach. You have access to the user's profile and workout data.
+Be helpful, motivating, and specific. Give evidence-based advice.
+If you don't know something, say so rather than guessing.
+
+User profile and context:
+{profile}"""
 
 def stream_chat(user, messages: list, db: Session):
     system = build_coach_system_prompt(user, db)
@@ -52,7 +69,7 @@ def stream_chat(user, messages: list, db: Session):
             
 def get_progressive_overload_suggestions(user, db: Session):
     from app.models.session import WorkoutSession, ExerciseLog
-    sessions = db.query(WorkoutSession).filter(WorkoutSession.user_id == user.id).limit(6).all()
+    sessions = db.query(WorkoutSession).filter(WorkoutSession.user_id == user.id).order_by(WorkoutSession.session_date.desc()).limit(6).all()
     if len(sessions) < 2: return []
     history = {}
     for s in sessions:
@@ -61,7 +78,7 @@ def get_progressive_overload_suggestions(user, db: Session):
                 {"date": str(s.session_date), "sets": log.sets_data}
             )
     if not history: return []
-    prompt = f"""Analyze workout history. Return ONLY a JSON array:
+    prompt = f"""Analyze workout history. Return ONLY a JSON array (no markdown, no code fences):
     [{{"exercise": "name", "suggestion": "specific next-session suggestion"}}]
     History: {json.dumps(history)}"""
     response = client.messages.create(
@@ -71,5 +88,6 @@ def get_progressive_overload_suggestions(user, db: Session):
     )
     
     answer = response.content[0].text.strip()
+    answer = _strip_code_fences(answer)
     
     return json.loads(answer)

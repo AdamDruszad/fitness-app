@@ -69,7 +69,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold text-text-main">You don't have a plan</h2>
             <p className="text-text-muted">Please generate one here</p>
             <IconArrowNarrowDownDashed stroke={2} className="text-brand-accent" />
-            <button className="border border-border-subtle bg-brand-accent rounded-lg py-2 px-4 font-medium text-text-main hover:bg-brand-accent/50 transition" type="button" onClick={() => navigate("/Onboarding")}>Generate a Plan</button>
+            <button className="border border-border-subtle bg-brand-accent rounded-lg py-2 px-4 font-medium text-text-main hover:bg-brand-accent/50 transition" type="button" onClick={() => navigate("/onboarding")}>Generate a Plan</button>
           </div>
         ) : todayPlan ? (
           <>
