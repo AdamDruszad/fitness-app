@@ -1,3 +1,11 @@
+/**
+ * @file Login.jsx
+ * @description User login page component.
+ * Provides credentials authentication form (email & password),
+ * handles JWT storage in localStorage on success, displays error alerts,
+ * and includes a light/dark theme toggle button.
+ */
+
 import { useState } from "react";
 import { Link } from "react-router";
 import client from "../api/client";
@@ -11,13 +19,20 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
+  /**
+   * Handles user login submission.
+   * Submits credentials to /auth/login, stores access_token on success,
+   * and routes user to dashboard ("/").
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     setError("");
+
     try {
       const { data } = await client.post("/auth/login", { email, password });
+      // Persist access token in localStorage for subsequent authenticated API requests
       localStorage.setItem("token", data.access_token);
       window.location.href = "/";
     } catch {
@@ -29,6 +44,7 @@ export default function Login() {
 
   return (
     <div className="bg-base h-screen flex justify-center items-center px-4 relative overflow-hidden">
+      {/* Decorative background grid and gradient light orbs */}
       <div
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
@@ -37,12 +53,10 @@ export default function Login() {
           backgroundSize: "40px 40px",
         }}
       />
-
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-120 right-120 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-120 left-120 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Login Card Form */}
       <div className="bg-surface rounded-2xl p-8 w-full max-w-sm border border-border-subtle relative z-10">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
@@ -51,6 +65,7 @@ export default function Login() {
               FitAI
             </span>
           </div>
+          {/* Theme switcher toggle button */}
           <button
             aria-label="Change Theme"
             className="bg-input rounded-full p-2.5 border border-border-subtle shrink-0 cursor-pointer hover:bg-surface/50"
@@ -64,6 +79,7 @@ export default function Login() {
           </button>
         </div>
 
+        {/* Pulse waveform accent icon */}
         <svg
           className="w-full h-8 mb-6 block text-brand-accent"
           viewBox="0 0 292 32"
@@ -82,6 +98,7 @@ export default function Login() {
         <h1 className="text-text-main font-bold text-3xl mb-5">Welcome back</h1>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3">
+          {/* Email input field */}
           <div className="relative">
             <IconMail
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -98,6 +115,7 @@ export default function Login() {
             />
           </div>
 
+          {/* Password input field */}
           <div className="relative">
             <IconLock
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -114,8 +132,10 @@ export default function Login() {
             />
           </div>
 
+          {/* Validation error message */}
           {error && <p className="text-red-400 text-sm -mt-1">{error}</p>}
 
+          {/* Submit action button */}
           <button
             type="submit"
             disabled={isSubmitting}

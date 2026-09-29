@@ -1,3 +1,12 @@
+/**
+ * @file Coach.jsx
+ * @description Interactive AI fitness coach chat interface.
+ * Connects to the backend SSE endpoint (/chat/) for real-time streamed responses.
+ * Renders rich markdown (tables, lists, bold text) using react-markdown,
+ * manages optimistic UI message updates, provides automatic scroll-to-bottom,
+ * and maintains conversation history across sessions.
+ */
+
 import { useState, useEffect, useRef } from "react";
 import client from "../api/client";
 import Layout from "../components/Layout";
@@ -13,12 +22,16 @@ export default function Coach() {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Scroll to bottom whenever messages change
+  /**
+   * Auto-scrolls to the bottom of the chat container when messages update.
+   */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load chat history on mount
+  /**
+   * Loads historical messages on component mount.
+   */
   useEffect(() => {
     client
       .get("/chat/")
@@ -35,6 +48,11 @@ export default function Coach() {
       .finally(() => setLoading(false));
   }, []);
 
+  /**
+   * Sends user message to the backend and consumes the Server-Sent Events stream.
+   * 
+   * @param {React.FormEvent} e - Form submission event.
+   */
   async function handleSend(e) {
     e.preventDefault();
     const text = input.trim();
@@ -43,7 +61,7 @@ export default function Coach() {
     setInput("");
     setError("");
 
-    // Optimistically add user message
+    // Optimistically insert user message and empty assistant reply placeholder
     const userMsg = { role: "user", content: text, id: crypto.randomUUID() };
     const assistantMsg = {
       role: "assistant",
@@ -56,9 +74,9 @@ export default function Coach() {
 
     try {
       const token = localStorage.getItem("token");
-      const baseURL =
-        import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+      // Initiate SSE streaming request
       const response = await fetch(`${baseURL}/chat/`, {
         method: "POST",
         headers: {
@@ -77,6 +95,7 @@ export default function Coach() {
         throw new Error(`Server error: ${response.status}`);
       }
 
+      // Read chunked stream using ReadableStream reader
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -87,12 +106,12 @@ export default function Coach() {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        // Keep the last potentially incomplete line in the buffer
+        // Keep the last potentially incomplete line in buffer
         buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("event: done")) {
-            // Stream finished — nothing to parse
+            // End of stream event from server
             continue;
           }
           if (line.startsWith("data: ")) {
@@ -100,6 +119,7 @@ export default function Coach() {
             if (!payload || payload === "{}") continue;
             try {
               const chunk = JSON.parse(payload);
+              // Append newly arrived text chunk to assistant's message content
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
@@ -110,14 +130,14 @@ export default function Coach() {
                 return updated;
               });
             } catch {
-              // Non-JSON line, skip
+              // Ignore non-JSON ping/heartbeat lines
             }
           }
         }
       }
     } catch (err) {
       setError(err.message || "Something went wrong");
-      // Remove the empty assistant placeholder on error
+      // Remove empty assistant placeholder if failed before stream started
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant" && !last.content) {
@@ -149,7 +169,7 @@ export default function Coach() {
           </div>
         </div>
 
-        {/* Messages area */}
+        {/* Scrollable Conversation History Container */}
         <div className="flex-1 overflow-y-auto rounded-2xl border border-border-subtle bg-surface/30 backdrop-blur-sm p-4 flex flex-col gap-3 scroll-smooth">
           {loading ? (
             <div className="flex-1 flex items-center justify-center">
@@ -163,6 +183,7 @@ export default function Coach() {
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           ) : messages.length === 0 ? (
+            /* Empty State */
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-4">
               <div className="p-4 bg-brand-accent/10 rounded-full">
                 <IconRobot size={32} className="text-brand-accent/60" />
@@ -173,6 +194,7 @@ export default function Coach() {
               </p>
             </div>
           ) : (
+            /* Rendered Messages */
             messages.map((msg) => (
               <div
                 key={msg.id}
@@ -180,7 +202,7 @@ export default function Coach() {
                   msg.role === "user" ? "flex-row-reverse" : "flex-row"
                 }`}
               >
-                {/* Avatar */}
+                {/* User / Assistant Avatar */}
                 <div
                   className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
                     msg.role === "user"
@@ -203,7 +225,7 @@ export default function Coach() {
                   )}
                 </div>
 
-                {/* Bubble */}
+                {/* Message Bubble (Markdown formatted for coach, raw for user) */}
                 <div
                   className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
                     msg.role === "user"
@@ -224,14 +246,14 @@ export default function Coach() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Error banner */}
+        {/* Error notification banner */}
         {error && messages.length > 0 && (
           <div className="mt-2 px-3 py-2 text-xs text-red-400 border border-red-400/30 rounded-lg bg-red-400/5 text-center">
             {error}
           </div>
         )}
 
-        {/* Input */}
+        {/* Message Input Form */}
         <form
           onSubmit={handleSend}
           className="mt-3 flex items-center gap-2 bg-input border border-border-subtle rounded-xl px-3 py-2 focus-within:border-brand-accent/50 transition-colors"

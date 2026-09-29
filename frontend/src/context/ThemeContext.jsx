@@ -1,18 +1,34 @@
-// src/context/ThemeContext.jsx
+/**
+ * @file ThemeContext.jsx
+ * @description React Context Provider managing application-wide dark/light theme switching.
+ * Persists the user's theme preference in localStorage and toggles the '.light' CSS class
+ * on document.documentElement for Tailwind CSS / custom CSS variable styling.
+ */
+
 import { createContext, useState, useEffect } from "react";
 
- export const ThemeContext = createContext(null);
+// Create React context for theme values and toggle handler
+export const ThemeContext = createContext(null);
 
+/**
+ * ThemeProvider component wrapping application root.
+ * 
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Child components receiving theme context.
+ */
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+  // Read initial theme preference from localStorage, default to "dark"
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
+  // Synchronize CSS class on <html> element and persist in localStorage
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  // Toggle between dark and light themes
   const toggleTheme = () => {
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
   };
 
   return (

@@ -1,3 +1,11 @@
+/**
+ * @file WorkoutLogger.jsx
+ * @description Interactive workout logging interface.
+ * Allows users to track weights (kg) and reps for each exercise in their active plan day,
+ * add/remove sets dynamically, and save the session to the database.
+ * Uses Promise.allSettled to ensure individual exercise failures do not discard successful logs.
+ */
+
 import Layout from "../components/Layout";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -18,16 +26,23 @@ export default function WorkoutLogger() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(null);
-  // logs: { [dayName]: { [exerciseName]: [ {weight: '', reps: ''}, ... ] } }
+  
+  // State structure: { [dayName]: { [exerciseName]: [ { weight: '', reps: '' }, ... ] } }
   const [logs, setLogs] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // Ref for auto-scrolling to newly added set
+  // Reference for smooth scrolling down when an additional set is added
   const lastSetRef = useRef(null);
 
-  // Fetch plan — same 404-vs-real-error pattern as Dashboard
+  /**
+   * Fetches active workout plan on mount.
+   * Resolves initial active day in order of priority:
+   * 1. location.state.day passed from Dashboard route navigation
+   * 2. Today's weekday name if present in the plan
+   * 3. First day in the plan
+   */
   useEffect(() => {
     setLoading(true);
     client
@@ -36,10 +51,6 @@ export default function WorkoutLogger() {
         const p = r.data;
         setPlan(p);
 
-        // Determine initial active day:
-        // 1. location.state.day from Dashboard (if present)
-        // 2. today's weekday name if it matches a plan day
-        // 3. first plan day as fallback
         const stateDay = location.state?.day;
         const todayName = new Date().toLocaleDateString("en-US", {
           weekday: "long",
@@ -67,7 +78,9 @@ export default function WorkoutLogger() {
   const currentDay = days.find((d) => d.day === activeDay);
   const exercises = currentDay?.exercises || [];
 
-  // Initialize logs for active day (empty sets for exercises not yet touched)
+  /**
+   * Initializes empty set entries for exercises in activeDay if not already created.
+   */
   useEffect(() => {
     if (!activeDay || exercises.length === 0) return;
     setLogs((prev) => {
@@ -86,7 +99,9 @@ export default function WorkoutLogger() {
     });
   }, [activeDay]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll last added set into view
+  /**
+   * Auto-scrolls to the last added set whenever logs update.
+   */
   useEffect(() => {
     if (lastSetRef.current) {
       lastSetRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -94,6 +109,9 @@ export default function WorkoutLogger() {
     }
   }, [logs]);
 
+  /**
+   * Updates weight or rep value for a specific exercise and set index.
+   */
   function updateSet(exerciseName, setIndex, field, value) {
     setLogs((prev) => {
       const dayLogs = { ...(prev[activeDay] || {}) };
@@ -104,6 +122,9 @@ export default function WorkoutLogger() {
     });
   }
 
+  /**
+   * Appends a new set row for the specified exercise.
+   */
   function addSet(exerciseName) {
     setLogs((prev) => {
       const dayLogs = { ...(prev[activeDay] || {}) };
@@ -115,6 +136,9 @@ export default function WorkoutLogger() {
     });
   }
 
+  /**
+   * Removes a set row from the specified exercise.
+   */
   function removeSet(exerciseName, setIndex) {
     setLogs((prev) => {
       const dayLogs = { ...(prev[activeDay] || {}) };
@@ -125,12 +149,15 @@ export default function WorkoutLogger() {
     });
   }
 
-  // Check if there's data to save for the ACTIVE day only
+  // Check if there is valid numerical data entered for the active day
   const activeDayLogs = logs[activeDay] || {};
   const hasData = Object.values(activeDayLogs).some((sets) =>
     sets.some((s) => s.weight !== "" && s.reps !== "")
   );
 
+  /**
+   * Submits the completed workout session and all recorded exercise sets to the backend.
+   */
   async function handleSave() {
     if (!hasData || saving) return;
 
@@ -138,7 +165,7 @@ export default function WorkoutLogger() {
     setSaveError("");
 
     try {
-      // Step 1: Create the session
+      // Step 1: Create session record with today's date formatted as YYYY-MM-DD
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const sessionRes = await client.post("/sessions", {
@@ -146,7 +173,7 @@ export default function WorkoutLogger() {
       });
       const sessionId = sessionRes.data.id;
 
-      // Step 2: Build exercise log requests scoped to activeDay only
+      // Step 2: Build individual exercise log promises
       const entries = Object.entries(activeDayLogs)
         .map(([exerciseName, sets]) => {
           const validSets = sets
@@ -155,7 +182,7 @@ export default function WorkoutLogger() {
               weight: parseFloat(s.weight),
               reps: parseInt(s.reps, 10),
             }))
-            // Filter out any NaN values that could cause 422 on the backend
+            // Filter out NaN numbers to prevent FastAPI 422 Unprocessable Entity
             .filter((s) => !Number.isNaN(s.weight) && !Number.isNaN(s.reps));
 
           if (validSets.length === 0) return null;
@@ -170,7 +197,7 @@ export default function WorkoutLogger() {
         })
         .filter(Boolean);
 
-      // Step 3: Use allSettled so partial failures don't swallow successes
+      // Step 3: Dispatch logs in parallel using Promise.allSettled
       const results = await Promise.allSettled(
         entries.map((e) => e.promise)
       );
@@ -183,7 +210,6 @@ export default function WorkoutLogger() {
         setSaved(true);
         setTimeout(() => navigate("/"), 1500);
       } else if (entries.length === 0) {
-        // NaN filtering removed all sets — nothing was actually sent
         setSaveError("No valid data to save. Check your numbers and try again.");
       } else if (failed.length === entries.length) {
         setSaveError("Failed to save any exercises. Please try again.");
@@ -194,14 +220,15 @@ export default function WorkoutLogger() {
         );
       }
     } catch {
-      // Session creation itself failed
       setSaveError("Could not create session. Please try again.");
     } finally {
       setSaving(false);
     }
   }
 
-  // Switch day — logs are preserved per-day, no wipe needed
+  /**
+   * Switches the active day tab. Preserves logged set entries per day.
+   */
   function switchDay(dayName) {
     if (dayName === activeDay) return;
     setActiveDay(dayName);
@@ -214,6 +241,7 @@ export default function WorkoutLogger() {
       <div className="flex flex-col gap-5">
         <h1 className="text-3xl font-bold text-text-main">Log workout</h1>
 
+        {/* Plan Loading / Error States */}
         {error ? (
           <p className="px-4 py-2 flex justify-center items-center text-red-400 text-sm -mt-1 border border-red-400 rounded-md shadow-xl/50 shadow-red-400/40">
             {error}
@@ -242,7 +270,7 @@ export default function WorkoutLogger() {
               You need a workout plan first.
             </p>
             <button
-              className="border border-border-subtle bg-brand-accent rounded-lg py-2 px-4 font-medium text-text-main hover:bg-brand-accent/50 transition"
+              className="border border-border-subtle bg-brand-accent rounded-lg py-2 px-4 font-medium text-text-main hover:bg-brand-accent/50 transition cursor-pointer"
               type="button"
               onClick={() => navigate("/onboarding")}
             >
@@ -251,7 +279,7 @@ export default function WorkoutLogger() {
           </div>
         ) : (
           <>
-            {/* Day tabs */}
+            {/* Day Selector Tabs */}
             <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
               {days.map((d) => {
                 const isActive = d.day === activeDay;
@@ -272,7 +300,7 @@ export default function WorkoutLogger() {
               })}
             </div>
 
-            {/* Day focus header */}
+            {/* Current Day Focus Summary */}
             {currentDay && (
               <div className="flex items-center justify-between">
                 <div>
@@ -286,7 +314,7 @@ export default function WorkoutLogger() {
               </div>
             )}
 
-            {/* Exercise cards */}
+            {/* Exercise Set Input Cards */}
             <div className="flex flex-col gap-4">
               {exercises.map((ex) => {
                 const name = ex.name || ex.exercise;
@@ -297,7 +325,7 @@ export default function WorkoutLogger() {
                     key={name}
                     className="bg-surface/70 border border-border-subtle rounded-xl overflow-hidden"
                   >
-                    {/* Exercise header */}
+                    {/* Exercise Header */}
                     <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <IconBarbell
@@ -316,9 +344,9 @@ export default function WorkoutLogger() {
                       )}
                     </div>
 
-                    {/* Sets table */}
+                    {/* Sets Input Table */}
                     <div className="px-4 py-3">
-                      {/* Column headers */}
+                      {/* Column Header Titles */}
                       <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 mb-2">
                         <span className="text-[11px] text-text-muted font-medium uppercase tracking-wider">
                           Set
@@ -332,7 +360,7 @@ export default function WorkoutLogger() {
                         <span />
                       </div>
 
-                      {/* Set rows */}
+                      {/* Set Input Rows */}
                       {sets.map((s, idx) => (
                         <div
                           key={idx}
@@ -373,7 +401,7 @@ export default function WorkoutLogger() {
                         </div>
                       ))}
 
-                      {/* Add set button */}
+                      {/* Add Set Button */}
                       <button
                         type="button"
                         onClick={() => addSet(name)}
@@ -388,13 +416,14 @@ export default function WorkoutLogger() {
               })}
             </div>
 
-            {/* Save section */}
+            {/* Error Message */}
             {saveError && (
               <p className="px-4 py-2 flex justify-center items-center text-red-400 text-sm border border-red-400 rounded-md shadow-xl/50 shadow-red-400/40">
                 {saveError}
               </p>
             )}
 
+            {/* Save Action Status */}
             {saved ? (
               <div className="flex items-center justify-center gap-2 py-3.5 px-4 text-[15px] font-bold text-green-400 rounded-xl bg-green-400/10 border border-green-400/30">
                 <IconCheck size={20} />
@@ -413,7 +442,7 @@ export default function WorkoutLogger() {
               >
                 {saving ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (
