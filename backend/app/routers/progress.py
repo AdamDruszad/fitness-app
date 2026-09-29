@@ -9,8 +9,8 @@ from app.dependencies import get_current_user
 router = APIRouter()
 
 @router.get("/exercise/{exercise_name}")
-def get_exercise(exercise_name: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
-    results = db.query(ExerciseLog, WorkoutSession.session_date).join(WorkoutSession, ExerciseLog.session_id == WorkoutSession.id).filter(WorkoutSession.user_id == user.id, ExerciseLog.exercise_name == exercise_name).all()
+def get_exercise(exercise_name: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list:
+    results = db.query(ExerciseLog, WorkoutSession.session_date).join(WorkoutSession, ExerciseLog.session_id == WorkoutSession.id).filter(WorkoutSession.user_id == user.id, ExerciseLog.exercise_name == exercise_name).order_by(WorkoutSession.session_date.asc()).all()
     return [{"date": str(d), "sets": log.sets_data} for log, d in results]
 
 @router.get("/suggestions")

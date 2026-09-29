@@ -25,14 +25,22 @@ def message(body: ChatMessageIn, current_user: User = Depends(get_current_user),
     history = db.query(ChatMessage).filter(ChatMessage.user_id == current_user.id).order_by(ChatMessage.created_at.desc()).limit(20).all()
     messages = [{"role": m.role, "content": m.content} for m in reversed(history)]
 
-    chunks = []
+    # Collect the full response text so we can persist it after streaming.
+    # We use a mutable container because the generator closes over it and
+    # the DB session from Depends(get_db) stays alive for the duration of
+    # the StreamingResponse (FastAPI holds the dependency scope open until
+    # the response is fully sent).
+    collected = []
 
     def generate():
         for chunk in stream_chat(current_user, messages, db):
+            collected.append(chunk)
             yield f"data: {json.dumps(chunk)}\n\n"
-            chunks.append(chunk)
-        response = ChatMessage(role="assistant", content="".join(chunks), user_id = current_user.id)
-        db.add(response); db.commit()
+        # Persist the assistant reply after the full stream is consumed.
+        full_text = "".join(collected)
+        if full_text:
+            response_msg = ChatMessage(role="assistant", content=full_text, user_id=current_user.id)
+            db.add(response_msg)
+            db.commit()
         yield "event: done\ndata: {}\n\n"
     return StreamingResponse(generate(), media_type="text/event-stream")
-            

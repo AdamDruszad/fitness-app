@@ -243,7 +243,7 @@ export default function WorkoutLogger() {
             <button
               className="border border-border-subtle bg-brand-accent rounded-lg py-2 px-4 font-medium text-text-main hover:bg-brand-accent/50 transition"
               type="button"
-              onClick={() => navigate("/Onboarding")}
+              onClick={() => navigate("/onboarding")}
             >
               Generate a Plan
             </button>
