@@ -89,7 +89,7 @@ export default function Coach() {
       if (!response.ok) {
         if (response.status === 401) {
           localStorage.removeItem("token");
-          window.location.href = "/login";
+          window.location.href = "/";
           return;
         }
         throw new Error(`Server error: ${response.status}`);
