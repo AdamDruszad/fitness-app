@@ -20,18 +20,20 @@ app = FastAPI(
 # Parse allowed origins from environment variable if provided, with local fallbacks
 allowed_origins = [
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
 env_origins = os.getenv("ALLOWED_ORIGINS")
 if env_origins:
     allowed_origins.extend([origin.strip() for origin in env_origins.split(",") if origin.strip()])
 
-# Configure Cross-Origin Resource Sharing (CORS) to allow requests from local and Vercel domains
+# Configure Cross-Origin Resource Sharing (CORS) to allow requests from local dev ports and Vercel domains
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
+    allow_origin_regex=r"^(https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?|https:\/\/.*\.vercel\.app)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
