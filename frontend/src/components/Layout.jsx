@@ -6,7 +6,7 @@
  */
 
 import { useAuth } from "../hooks/useAuth";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import {
     IconLayoutDashboard,
     IconBarbell,
@@ -33,6 +33,12 @@ const NAV_ITEMS = [
 export default function Layout({ children }) {
     const { logout } = useAuth();
     const { pathname } = useLocation();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
 
     return (
         <div className="min-h-screen bg-base relative">
@@ -67,7 +73,7 @@ export default function Layout({ children }) {
                     </Link>
                     <button
                         className="text-text-muted hover:text-text-main font-medium cursor-pointer transition"
-                        onClick={logout}
+                        onClick={handleLogout}
                     >
                         Sign out
                     </button>
