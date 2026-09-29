@@ -19,8 +19,10 @@ async def lifespan(app: FastAPI):
     """
     Application lifecycle manager.
     Ensures all database schema tables exist before serving traffic.
+    Uses engine.begin() to commit DDL transactions through PgBouncer/Neon poolers.
     """
-    Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        Base.metadata.create_all(conn)
     yield
 
 
