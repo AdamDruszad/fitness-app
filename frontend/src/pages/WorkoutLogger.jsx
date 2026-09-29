@@ -92,7 +92,7 @@ export default function WorkoutLogger() {
       lastSetRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
       lastSetRef.current = null;
     }
-  });
+  }, [logs]);
 
   function updateSet(exerciseName, setIndex, field, value) {
     setLogs((prev) => {
