@@ -5,6 +5,7 @@ Initializes the FastAPI app, configures CORS middleware for frontend communicati
 registers all feature routers, and defines basic health check endpoints.
 """
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, users, plans, chat, sessions, progress
@@ -16,13 +17,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configure Cross-Origin Resource Sharing (CORS) to allow frontend requests
+# Parse allowed origins from environment variable if provided, with local fallbacks
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+]
+env_origins = os.getenv("ALLOWED_ORIGINS")
+if env_origins:
+    allowed_origins.extend([origin.strip() for origin in env_origins.split(",") if origin.strip()])
+
+# Configure Cross-Origin Resource Sharing (CORS) to allow requests from local and Vercel domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Local Vite frontend dev server
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=True,
 )
 
 # Register route modules with modular URL prefixes and OpenAPI tags
