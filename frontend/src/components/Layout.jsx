@@ -35,12 +35,20 @@ export default function Layout({ children }) {
                         FitAI
                     </span>
                 </div>
-                <button
-                    className="text-text-muted hover:text-text-main font-medium cursor-pointer transition"
-                    onClick={logout}
-                >
-                    Sign out
-                </button>
+                <div className="flex items-center gap-4">
+                    <Link
+                        to="/onboarding"
+                        className="text-text-muted hover:text-text-main font-medium transition"
+                    >
+                        Settings
+                    </Link>
+                    <button
+                        className="text-text-muted hover:text-text-main font-medium cursor-pointer transition"
+                        onClick={logout}
+                    >
+                        Sign out
+                    </button>
+                </div>
             </header>
             <main className="relative z-10 px-6 py-6 max-w-3xl mx-auto pb-24">
                 {children}

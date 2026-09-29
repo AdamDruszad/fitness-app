@@ -14,16 +14,22 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {theme, toggleTheme} = useTheme();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError("");
     try {
       const { data } = await client.post("/auth/register", { email, password });
       localStorage.setItem("token", data.access_token);
       window.location.href = '/onboarding';
     } catch (err) {
       setError(err.response?.data?.detail || "Registration failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -129,9 +135,17 @@ export default function Register() {
 
           <button
             type="submit"
-            className="text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 cursor-pointer transition"
+            disabled={isSubmitting}
+            className="flex justify-center items-center text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
           >
-            Create account
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                Creating account...
+              </>
+            ) : (
+              "Create account"
+            )}
           </button>
         </form>
 

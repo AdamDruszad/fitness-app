@@ -8,16 +8,22 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError("");
     try {
       const { data } = await client.post("/auth/login", { email, password });
       localStorage.setItem("token", data.access_token);
       window.location.href = "/";
     } catch {
       setError("Invalid email or password");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -112,14 +118,22 @@ export default function Login() {
 
           <button
             type="submit"
-            className="text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 cursor-pointer transition"
+            disabled={isSubmitting}
+            className="flex justify-center items-center text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
           >
-            Log in
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                Logging in...
+              </>
+            ) : (
+              "Log in"
+            )}
           </button>
         </form>
 
         <p className="text-text-muted text-sm text-center mt-5">
-          Doesn't have an account?{" "}
+          Don't have an account?{" "}
           <Link to="/register" className="text-brand-accent font-medium">
             Register
           </Link>

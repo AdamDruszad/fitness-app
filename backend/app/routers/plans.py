@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
@@ -14,6 +15,11 @@ router = APIRouter()
 def generate(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> PlanResponse:
     if current_user.goal is None:
         raise HTTPException(400, "Complete your profile first")
+        
+    last_plan = db.query(WorkoutPlan).filter(WorkoutPlan.user_id == current_user.id).order_by(WorkoutPlan.created_at.desc()).first()
+    if last_plan and last_plan.created_at and last_plan.created_at > datetime.now(timezone.utc) - timedelta(minutes=2):
+        raise HTTPException(429, "You can only generate a plan once every 2 minutes. Please wait.")
+        
     db.query(WorkoutPlan).filter(WorkoutPlan.user_id == current_user.id, WorkoutPlan.is_active == True).update({"is_active": False})
     
     try:

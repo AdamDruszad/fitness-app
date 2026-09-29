@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import WorkoutLogger from "./pages/WorkoutLogger";
 import Coach from "./pages/Coach";
 import Progress from "./pages/Progress";
+import NotFound from "./pages/NotFound";
 
 import { ErrorBoundary } from "./ErrorBoundary";
 
@@ -41,6 +42,7 @@ export default function App() {
             path="/progress"
             element={user ? <Progress /> : <Navigate to="/login" />}
           />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </ErrorBoundary>

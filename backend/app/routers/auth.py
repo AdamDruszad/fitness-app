@@ -9,11 +9,12 @@ router = APIRouter()
 
 @router.post("/register", response_model=Token)
 def register(body: UserRegister, db: Session = Depends(get_db)) -> Token:
-    if db.query(User).filter(User.email == body.email).first():
+    email_lower = body.email.lower()
+    if db.query(User).filter(User.email == email_lower).first():
         raise HTTPException(status_code=400, detail='This email is already in use')
     else:
         user = User()
-        user.email = body.email
+        user.email = email_lower
         user.password_hash = hash_password(body.password)
         db.add(user)
         db.commit()
@@ -22,7 +23,7 @@ def register(body: UserRegister, db: Session = Depends(get_db)) -> Token:
 
 @router.post("/login", response_model=Token)
 def login(body: UserLogin, db: Session = Depends(get_db)) -> Token:
-    user = db.query(User).filter(User.email == body.email).first()
+    user = db.query(User).filter(User.email == body.email.lower()).first()
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(401, detail="""You're not registered or wrong password""")
     return Token(access_token=create_access_token(str(user.id)))

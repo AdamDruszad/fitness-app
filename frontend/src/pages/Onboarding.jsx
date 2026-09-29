@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import client from "../api/client";
 
@@ -11,8 +11,31 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ goal: "", level: "", days_per_week: 3, equipment: "", age: "", gender: "", weight_kg: "", injuries: "" });
   const [loading, setLoading] = useState(false);
+  const [initLoading, setInitLoading] = useState(true);
   const [genderOpen, setGenderOpen] = useState(false);
   const update = (field, value) => setForm(prevForm => ({ ...prevForm, [field]: value }));
+
+  useEffect(() => {
+    client.get('/users/me')
+      .then(r => {
+        const d = r.data;
+        if (d) {
+          setForm(prev => ({
+            ...prev,
+            goal: d.goal || "",
+            level: d.level || "",
+            days_per_week: d.days_per_week || 3,
+            equipment: d.equipment || "",
+            age: d.age || "",
+            gender: d.gender || "",
+            weight_kg: d.weight_kg || "",
+            injuries: d.injuries || ""
+          }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInitLoading(false));
+  }, []);
 
   const genderOptions = [
     { value: 'male', label: '♂️ Male' },
@@ -86,6 +109,8 @@ export default function Onboarding() {
       <h2 className="text-xl font-bold text-text-main mb-2">Please enter your biometrics</h2>
       <input
         type="number"
+        min="10"
+        max="120"
         placeholder="Age"
         value={form.age}
         onChange={e => update('age', e.target.value)}
@@ -93,6 +118,8 @@ export default function Onboarding() {
       />
       <input
         type="number"
+        min="20"
+        max="300"
         placeholder="Weight (kg)"
         value={form.weight_kg}
         onChange={e => update('weight_kg', e.target.value)}
@@ -137,6 +164,8 @@ export default function Onboarding() {
       </textarea>
     </div>
   ]
+
+  if (initLoading) return null;
 
   return (
     <div className="bg-base min-h-screen flex justify-center items-center py-8 px-4 relative overflow-hidden">
