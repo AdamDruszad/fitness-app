@@ -12,6 +12,13 @@ import client from "../api/client";
 import Layout from "../components/Layout";
 import { IconSend2, IconRobot, IconUser, IconLoader2 } from "@tabler/icons-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import PageHeading from "../components/PageHeading";
+import { Link } from "react-router";
+
+const markdownComponents = {
+  table: ({ children }) => <div className="coach-table" role="region" aria-label="Coach table, scroll horizontally for more" tabIndex={0}><table>{children}</table></div>,
+};
 
 export default function Coach() {
   const [messages, setMessages] = useState([]);
@@ -21,21 +28,30 @@ export default function Coach() {
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const streamControllerRef = useRef(null);
+  const followMessagesRef = useRef(true);
 
   /**
    * Auto-scrolls to the bottom of the chat container when messages update.
    */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (followMessagesRef.current) {
+      bottomRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "nearest",
+      });
+    }
   }, [messages]);
 
   /**
    * Loads historical messages on component mount.
    */
   useEffect(() => {
+    const controller = new AbortController();
     client
-      .get("/chat/")
+      .get("/chat/", { signal: controller.signal })
       .then((r) => {
+        if (controller.signal.aborted) return;
         setMessages(
           r.data.map((m) => ({
             role: m.role,
@@ -44,8 +60,16 @@ export default function Coach() {
           }))
         );
       })
-      .catch(() => setError("Could not load chat history"))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!controller.signal.aborted) setError("Could not load chat history. You can still send a new message.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+      streamControllerRef.current?.abort();
+    };
   }, []);
 
   /**
@@ -56,7 +80,11 @@ export default function Coach() {
   async function handleSend(e) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || streaming) return;
+    if (!text || loading || streaming || streamControllerRef.current) return;
+
+    const controller = new AbortController();
+    streamControllerRef.current = controller;
+    followMessagesRef.current = true;
 
     setInput("");
     setError("");
@@ -72,6 +100,7 @@ export default function Coach() {
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setStreaming(true);
 
+    let reader;
     try {
       const token = localStorage.getItem("token");
       const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -84,6 +113,7 @@ export default function Coach() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content: text }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -96,12 +126,14 @@ export default function Coach() {
       }
 
       // Read chunked stream using ReadableStream reader
-      const reader = response.body.getReader();
+      if (!response.body) throw new Error("The coach response could not be read. Please try again.");
+      reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
+        if (controller.signal.aborted) return;
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -119,16 +151,13 @@ export default function Coach() {
             if (!payload || payload === "{}") continue;
             try {
               const chunk = JSON.parse(payload);
+              if (typeof chunk !== "string") continue;
               // Append newly arrived text chunk to assistant's message content
-              setMessages((prev) => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                updated[updated.length - 1] = {
-                  ...last,
-                  content: last.content + chunk,
-                };
-                return updated;
-              });
+              setMessages((prev) => prev.map((message) =>
+                message.id === assistantMsg.id
+                  ? { ...message, content: message.content + chunk }
+                  : message
+              ));
             } catch {
               // Ignore non-JSON ping/heartbeat lines
             }
@@ -136,41 +165,42 @@ export default function Coach() {
         }
       }
     } catch (err) {
+      if (controller.signal.aborted) return;
       setError(err.message || "Something went wrong");
       // Remove empty assistant placeholder if failed before stream started
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && !last.content) {
-          return prev.slice(0, -1);
-        }
-        return prev;
-      });
+      setMessages((prev) => prev.filter((message) =>
+        message.id !== assistantMsg.id || message.content
+      ));
     } finally {
-      setStreaming(false);
-      inputRef.current?.focus();
+      reader?.releaseLock();
+      if (streamControllerRef.current === controller) {
+        streamControllerRef.current = null;
+        if (!controller.signal.aborted) {
+          setStreaming(false);
+          inputRef.current?.focus();
+        }
+      }
     }
   }
 
   return (
-    <Layout>
-      <div className="flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
+    <Layout contentClassName="coach-content">
+      <div className="coach-layout">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-brand-accent/15 rounded-xl">
-            <IconRobot className="text-brand-accent" size={24} stroke={1.5} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-text-main leading-tight">
-              AI Coach
-            </h1>
-            <p className="text-xs text-text-muted">
-              Ask anything about your training
-            </p>
-          </div>
-        </div>
+        <PageHeading eyebrow="A little guidance goes a long way" title="AI Coach" description="Talk through your training, technique and recovery." />
 
         {/* Scrollable Conversation History Container */}
-        <div className="flex-1 overflow-y-auto rounded-2xl border border-border-subtle bg-surface/30 backdrop-blur-sm p-4 flex flex-col gap-3 scroll-smooth">
+        <div
+          role="log"
+          aria-label="Conversation with your coach"
+          aria-live="off"
+          tabIndex={0}
+          onScroll={(event) => {
+            const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
+            followMessagesRef.current = scrollHeight - scrollTop - clientHeight < 80;
+          }}
+          className="coach-conversation"
+        >
           {loading ? (
             <div className="flex-1 flex items-center justify-center">
               <IconLoader2
@@ -180,7 +210,7 @@ export default function Coach() {
             </div>
           ) : error && messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-red-400 text-sm">{error}</p>
+              <p role="alert" className="text-red-400 text-sm">{error}</p>
             </div>
           ) : messages.length === 0 ? (
             /* Empty State */
@@ -198,7 +228,7 @@ export default function Coach() {
             messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2.5 ${
+                className={`coach-message flex gap-2.5 ${
                   msg.role === "user" ? "flex-row-reverse" : "flex-row"
                 }`}
               >
@@ -227,13 +257,13 @@ export default function Coach() {
 
                 {/* Message Bubble (Markdown formatted for coach, raw for user) */}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
+                  className={`coach-bubble rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
                     msg.role === "user"
                       ? "bg-brand-accent text-white rounded-tr-md whitespace-pre-wrap"
                       : "bg-white/[0.04] border border-border-subtle text-text-main rounded-tl-md markdown-body"
                   }`}
                 >
-                  {msg.role === "user" ? msg.content : <ReactMarkdown>{msg.content}</ReactMarkdown>}
+                  {msg.role === "user" ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>}
                   {msg.role === "assistant" &&
                     streaming &&
                     msg === messages[messages.length - 1] && (
@@ -248,10 +278,16 @@ export default function Coach() {
 
         {/* Error notification banner */}
         {error && messages.length > 0 && (
-          <div className="mt-2 px-3 py-2 text-xs text-red-400 border border-red-400/30 rounded-lg bg-red-400/5 text-center">
+          <div role="alert" className="mt-2 px-3 py-2 text-xs text-red-400 border border-red-400/30 rounded-lg bg-red-400/5 text-center">
             {error}
           </div>
         )}
+
+        <p className="sr-only" role="status">
+          {loading ? "Loading chat history" : streaming ? "Your coach is replying" : "Coach ready"}
+        </p>
+
+        <p className="coach-note">Chat suggestions don't change your saved plan. <Link to="/onboarding">Update your training preferences</Link> to create a new one.</p>
 
         {/* Message Input Form */}
         <form
@@ -260,18 +296,20 @@ export default function Coach() {
         >
           <input
             ref={inputRef}
+            aria-label="Message your coach"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={streaming ? "Waiting for response…" : "Ask your coach…"}
-            disabled={streaming}
-            className="flex-1 bg-transparent text-text-main text-sm placeholder:text-text-muted/50 outline-none disabled:opacity-50"
+            placeholder={loading ? "Loading chat history…" : streaming ? "Waiting for response…" : "Ask your coach…"}
+            disabled={loading || streaming}
+            className="min-w-0 flex-1 bg-transparent text-text-main text-sm placeholder:text-text-muted outline-none disabled:opacity-50"
             id="coach-input"
             autoComplete="off"
           />
           <button
             type="submit"
-            disabled={streaming || !input.trim()}
+            aria-label="Send message"
+            disabled={loading || streaming || !input.trim()}
             className="p-2 rounded-lg bg-brand-accent text-white hover:bg-brand-accent/85 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 cursor-pointer"
             id="coach-send-btn"
           >

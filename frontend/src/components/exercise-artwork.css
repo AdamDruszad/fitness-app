@@ -1,0 +1,32 @@
+.exercise-art {
+  --art-shirt: #d85a30;
+  --art-skin: #dab69b;
+  --art-shorts: #5d636f;
+  --art-equipment: #8a8e99;
+  --art-hair: #373038;
+  display: block;
+  flex: none;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.exercise-art__skin { fill: none; stroke: var(--art-skin); }
+.exercise-art__skin-fill { fill: var(--art-skin); }
+.exercise-art__shirt { fill: none; stroke: var(--art-shirt); }
+.exercise-art__shorts { fill: none; stroke: var(--art-shorts); }
+.exercise-art__shoe { fill: none; stroke: #b8b9bd; }
+.exercise-art__hair { fill: var(--art-hair); }
+.exercise-art__far-limb { opacity: .65; }
+.exercise-art__equipment { fill: var(--art-equipment); color: var(--art-equipment); }
+.exercise-art__cable { fill: none; stroke: var(--art-equipment); stroke-width: 1.5; }
+.exercise-art__handle { fill: none; stroke: var(--art-equipment); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.exercise-art__backdrop { fill: var(--art-shirt); opacity: .065; }
+.exercise-art__floor { fill: none; stroke: var(--art-equipment); stroke-width: 1.5; stroke-linecap: round; opacity: .3; }
+.exercise-art__fallback-ring { fill: none; stroke: var(--art-equipment); stroke-width: 1; stroke-dasharray: 3 5; opacity: .35; }
+
+.light .exercise-art {
+  --art-skin: #b88968;
+  --art-equipment: #666b77;
+}
