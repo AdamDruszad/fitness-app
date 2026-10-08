@@ -46,8 +46,8 @@ export default function Dashboard() {
   return <Layout contentClassName="dashboard-content">
     <PageHeading eyebrow="Your training space" title="Your plan" description="One session at a time. Make today count." />
     {error ? <div className="workout-empty"><p role="alert">{error}</p><button className="fitai-secondary-button" type="button" onClick={() => setReload(value => value + 1)}>Try again</button></div>
-      : loading ? <div className="workout-empty" role="status"><IconBarbell size={32} /><p>Loading your plan…</p></div>
-      : !nextDay ? <div className="dashboard-empty"><IconBarbell size={38} /><h2>Your next chapter starts here.</h2><p>Create a plan around your goals, equipment and schedule.</p><Link to="/onboarding" className="fitai-primary-button">Create your plan<IconArrowUpRight size={17} /></Link></div>
+      : loading ? <div className="workout-empty" role="status"><IconBarbell size={32} aria-hidden="true" /><p>Loading your plan…</p></div>
+      : !nextDay ? <div className="dashboard-empty"><IconBarbell size={38} aria-hidden="true" /><h2>Your next chapter starts here.</h2><p>Create a plan around your goals, equipment and schedule.</p><Link to="/onboarding" className="fitai-primary-button">Create your plan<IconArrowUpRight size={17} aria-hidden="true" /></Link></div>
       : <div className="dashboard-grid">
         <div className="dashboard-primary">
           <section className="next-workout" aria-labelledby="next-workout-heading">
@@ -67,7 +67,7 @@ export default function Dashboard() {
         </div>
         <aside className="dashboard-secondary" aria-label="Training activity">
           <section className="training-overview" aria-labelledby="overview-heading">
-            <div className="section-heading"><h2 id="overview-heading">At a glance</h2><IconChartMark /></div>
+            <div className="section-heading"><h2 id="overview-heading">At a glance</h2><IconChartMark aria-hidden="true" /></div>
             <div className="overview-stats"><div><strong>{plan?.plan_data?.weeks || 8}<small>weeks</small></strong><span>Plan length</span></div><div><strong>{weekCount}</strong><span>Last 7 days</span></div></div>
             <p>{recentCount} recent sessions loaded</p>
             <Link to="/progress" className="text-link">Explore your progress<IconArrowUpRight size={16} aria-hidden="true" /></Link>

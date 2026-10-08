@@ -9,6 +9,15 @@
   --color-text-muted: #9ca3af;
   --color-brand-accent: #d85a30;
   --color-grid-line: #ffffff;
+  /* Solid accent that still carries white text at WCAG AA (4.8:1). */
+  --color-brand-strong: #bc4722;
+  --color-brand-strong-hover: #a33d1c;
+  /* Accent reserved for text/icons: readable on both themes. */
+  --color-accent-text: var(--fitai-accent-text);
+  /* Error text: readable on both themes. */
+  --color-danger-text: #f87171;
+  /* Raised surface for bubbles and cards (replaces hard-coded white tints). */
+  --color-raised: rgba(255, 255, 255, .045);
 }
 
 .light {
@@ -19,6 +28,8 @@
   --color-text-main: #18181a;
   --color-text-muted: #6b6b68;
   --color-grid-line: #000000;
+  --color-danger-text: #b42318;
+  --color-raised: rgba(0, 0, 0, .04);
 }
 
 html, body, #root {
@@ -82,7 +93,7 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 4px; }
 button:disabled { cursor: not-allowed; }
 [tabindex="-1"]:focus { outline: none; }
-.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; background: var(--color-brand-accent); color: white; padding: 12px 20px; border-radius: 6px; }
+.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; background: var(--color-brand-strong); color: white; padding: 12px 20px; border-radius: 6px; }
 .skip-link:focus { top: 12px; }
 .fitai-shell { min-height: 100dvh; background: var(--color-base); }
 .fitai-header { border-bottom: 1px solid var(--color-border-subtle); background: var(--color-base); }
@@ -143,8 +154,8 @@ button:disabled { cursor: not-allowed; }
 .workout-savebar p { font-size: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .workout-savebar p > span { display: block; color: var(--color-text-muted); font-size: 10px; width: 100%; }
 .fitai-primary-button, .fitai-secondary-button { display: inline-flex; align-items: center; justify-content: center; text-align: center; gap: 12px; min-height: 44px; padding: 12px 20px; font-size: 12px; font-weight: 600; border-radius: 7px; cursor: pointer; text-decoration: none; }
-.fitai-primary-button { border: 1px solid var(--color-brand-accent); background: var(--color-brand-accent); color: white; }
-.fitai-primary-button:hover:not(:disabled) { background: #bc4722; }
+.fitai-primary-button { border: 1px solid var(--color-brand-strong); background: var(--color-brand-strong); color: white; }
+.fitai-primary-button:hover:not(:disabled) { background: var(--color-brand-strong-hover); border-color: var(--color-brand-strong-hover); }
 .fitai-primary-button:disabled { opacity: .45; cursor: not-allowed; }
 .fitai-secondary-button { background: transparent; border: 1px solid var(--color-border-subtle); color: var(--color-text-main); }
 .workout-empty { display: flex; align-items: center; flex-direction: column; justify-content: center; gap: 16px; text-align: center; padding: 60px 24px; }

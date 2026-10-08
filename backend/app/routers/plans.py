@@ -6,6 +6,7 @@ fetch the user's active plan, and view past plan archives.
 """
 
 from datetime import datetime, timedelta, timezone
+import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -13,10 +14,11 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.plan import WorkoutPlan
-from app.schemas.plan import PlanResponse
+from app.schemas.plan import GeneratedPlan, PlanResponse
 from app.services.ai import generate_plan
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/generate", response_model=PlanResponse, status_code=status.HTTP_200_OK)
@@ -48,6 +50,10 @@ def generate(
             detail="Complete your profile first"
         )
 
+    # Serialize generations for this account across workers. Otherwise concurrent
+    # requests can both pass the cooldown and create two active plans.
+    db.query(User).filter(User.id == current_user.id).with_for_update().one()
+
     # Check cooldown: rate limit to 1 plan per 2 minutes
     last_plan = (
         db.query(WorkoutPlan)
@@ -55,31 +61,30 @@ def generate(
         .order_by(WorkoutPlan.created_at.desc())
         .first()
     )
-    if (
-        last_plan
-        and last_plan.created_at
-        and last_plan.created_at > datetime.now(timezone.utc) - timedelta(minutes=2)
-    ):
+    created_at = last_plan.created_at if last_plan else None
+    if created_at is not None and created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    if created_at and created_at > datetime.now(timezone.utc) - timedelta(minutes=2):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You can only generate a plan once every 2 minutes. Please wait."
         )
 
-    # Deactivate existing active plans before creating the new one
+    # Provider output is untrusted: validate before changing the active plan.
+    try:
+        plan = GeneratedPlan.model_validate(generate_plan(current_user)).model_dump()
+    except Exception as e:
+        db.rollback()
+        logger.warning("Plan generation failed (%s)", type(e).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not generate a valid plan. Please try again."
+        )
+
     db.query(WorkoutPlan).filter(
         WorkoutPlan.user_id == current_user.id,
         WorkoutPlan.is_active == True
     ).update({"is_active": False})
-
-    # Call AI service to generate structured plan JSON
-    try:
-        plan = generate_plan(current_user)
-    except Exception as e:
-        print(f"PLAN GENERATION ERROR: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Something went wrong"
-        )
 
     # Persist the new active plan in database
     wo_plan = WorkoutPlan()

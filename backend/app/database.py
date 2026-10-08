@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
 from app.config import settings
 
 # Create database engine with pool_pre_ping enabled to detect disconnected pool connections
-engine = create_engine(settings.database_url, pool_pre_ping=True)
+engine = create_engine(settings.database_url.get_secret_value(), pool_pre_ping=True, hide_parameters=True)
 
 # Factory for creating new database Session instances for incoming requests
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -32,5 +32,8 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+    except BaseException:
+        db.rollback()
+        raise
     finally:
         db.close()

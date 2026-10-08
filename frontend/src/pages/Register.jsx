@@ -17,6 +17,7 @@ import {
   IconSun
 } from "@tabler/icons-react";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -24,10 +25,12 @@ export default function Register() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { login } = useAuth();
 
   /**
    * Handles new account registration form submission.
-   * Calls /auth/register, sets local storage token, and redirects to /onboarding.
+   * Calls /auth/register, stores the token, and lets the route-level redirect in
+   * App.jsx send the new user to /onboarding (or / if they already have a plan).
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,8 +40,7 @@ export default function Register() {
 
     try {
       const { data } = await client.post("/auth/register", { email: email.trim(), password });
-      localStorage.setItem("token", data.access_token);
-      window.location.href = '/onboarding';
+      await login(data.access_token);
     } catch (err) {
       setError(apiError(err, "Registration failed. Please try again."));
     } finally {
@@ -78,9 +80,9 @@ export default function Register() {
             onClick={toggleTheme}
           >
             {theme === "dark" ? (
-              <IconMoon className="w-4 h-4 text-text-main" stroke={2} />
+              <IconMoon className="w-4 h-4 text-text-main" stroke={2} aria-hidden="true" />
             ) : (
-              <IconSun className="w-4 h-4 text-text-main" stroke={2} />
+              <IconSun className="w-4 h-4 text-text-main" stroke={2} aria-hidden="true" />
             )}
           </button>
         </div>
@@ -173,7 +175,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex justify-center items-center text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
+            className="flex justify-center items-center text-white bg-brand-strong rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:bg-brand-strong-hover disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
           >
             {isSubmitting ? (
               <>
@@ -189,7 +191,7 @@ export default function Register() {
 
         <p className="text-text-muted text-sm text-center mt-5">
           Already have an account?{" "}
-          <Link to="/login" className="text-brand-accent font-medium">
+          <Link to="/login" className="text-accent-text font-medium">
             Log in
           </Link>
         </p>

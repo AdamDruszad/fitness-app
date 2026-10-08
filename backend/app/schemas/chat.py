@@ -6,7 +6,8 @@ Pydantic models for incoming chat queries and serialized chat history messages.
 
 from datetime import datetime
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 
 class ChatMessageIn(BaseModel):
@@ -16,7 +17,7 @@ class ChatMessageIn(BaseModel):
     Attributes:
         content: The text query or question sent to the coach.
     """
-    content: str = Field(min_length=1, description="Message content sent by user")
+    content: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)]
 
 
 class ChatMessageResponse(BaseModel):

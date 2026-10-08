@@ -5,10 +5,8 @@
  * on document.documentElement for Tailwind CSS / custom CSS variable styling.
  */
 
-import { createContext, useState, useEffect } from "react";
-
-// Create React context for theme values and toggle handler
-export const ThemeContext = createContext(null);
+import { useState, useEffect } from "react";
+import { ThemeContext } from "./theme";
 
 /**
  * ThemeProvider component wrapping application root.

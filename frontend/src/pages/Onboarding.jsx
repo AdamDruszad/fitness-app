@@ -138,7 +138,7 @@ export default function Onboarding() {
       preferencesSaved = true;
       setHasSavedPreferences(true);
       setPhase("generating");
-      await client.post("/plans/generate");
+      await client.post("/plans/generate", undefined, { timeout: 120000 });
       navigate("/");
     } catch (failure) {
       const detail = apiError(failure, "Please try again.");
@@ -173,7 +173,7 @@ export default function Onboarding() {
             <ol className="grid grid-cols-6 md:grid-cols-1 gap-2 md:gap-5">
               {STEPS.map((label, index) => (
                 <li key={label} aria-current={index === step ? "step" : undefined} className={`flex items-center gap-3 text-sm ${index === step ? "text-text-main" : "text-text-muted"}`}>
-                  <span aria-hidden="true" className={`w-full md:w-7 h-1 md:h-7 shrink-0 rounded-full flex items-center justify-center text-xs ${index <= step ? "bg-brand-accent text-white" : "bg-input text-text-muted"}`}><span className="hidden md:block">{index < step ? <IconCheck size={14} /> : index + 1}</span></span>
+                  <span aria-hidden="true" className={`w-full md:w-7 h-1 md:h-7 shrink-0 rounded-full flex items-center justify-center text-xs ${index <= step ? "bg-brand-strong text-white" : "bg-input text-text-muted"}`}><span className="hidden md:block">{index < step ? <IconCheck size={14} aria-hidden="true" /> : index + 1}</span></span>
                   <span className="sr-only md:not-sr-only">{label}<span className="sr-only">{index < step ? " — completed" : ""}</span></span>
                 </li>
               ))}

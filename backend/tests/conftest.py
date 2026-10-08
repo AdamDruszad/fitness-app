@@ -1,41 +1,71 @@
-"""
-Pytest Test Suite Configuration and Fixtures.
+"""Integration tests always use an isolated, in-memory database and fake secrets.
 
-Configures test database tables and provides automatic teardown
-fixtures to ensure clean database state between test runs.
+Set these before importing any application module: running pytest must never
+connect to, create tables in, or delete data from a configured application DB.
 """
+
+import os
+
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["SECRET_KEY"] = "test-only-signing-key-never-use-in-production-123456789"
+os.environ["ANTHROPIC_API_KEY"] = "test-only-api-key"
+os.environ["ALLOWED_ORIGINS"] = "https://fitness-app-two-tawny.vercel.app"
+os.environ["ALGORITHM"] = "HS256"
+os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "10080"
 
 import pytest
-from app.database import SessionLocal, Base, engine
-from app.models.user import User
-from app.models.plan import WorkoutPlan
-from app.models.session import ExerciseLog, WorkoutSession
-from app.models.chat import ChatMessage
+from sqlalchemy import create_engine, event
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from app.database import Base, get_db
+from app.main import app
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_database():
-    """
-    Session-scoped fixture to create all database tables in the test database
-    before any tests run, and drop them upon test session completion.
-    """
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+@compiles(JSONB, "sqlite")
+def compile_jsonb_for_tests(_type, _compiler, **_kwargs):
+    """SQLite stores test JSON; production PostgreSQL keeps its native JSONB."""
+    return "JSON"
+
+
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+TestSessionLocal = sessionmaker(bind=engine, autoflush=False)
+
+
+@event.listens_for(engine, "connect")
+def enable_foreign_keys(connection, _record):
+    connection.execute("PRAGMA foreign_keys=ON")
 
 
 @pytest.fixture(autouse=True)
-def clean_database_tables():
-    """
-    Function-scoped autouse fixture that purges all database tables
-    after each individual test to guarantee test isolation.
-    """
+def isolated_database(monkeypatch):
+    Base.metadata.create_all(bind=engine)
+
+    def test_database():
+        with TestSessionLocal() as db:
+            yield db
+
+    def disallow_ai_calls(*_args, **_kwargs):
+        raise AssertionError("Tests must mock AI responses; external API calls are disabled")
+
+    from app.services import ai
+    from app.routers import progress as progress_router
+    from app import ratelimit
+    monkeypatch.setattr(ai.client.messages, "create", disallow_ai_calls)
+    monkeypatch.setattr(ai.client.messages, "stream", disallow_ai_calls)
+    # Rate-limit counters and cached AI answers must never leak between tests.
+    ratelimit.reset()
+    progress_router.reset_cache()
+    app.dependency_overrides[get_db] = test_database
     yield
-    db = SessionLocal()
-    db.query(ChatMessage).delete()
-    db.query(ExerciseLog).delete()
-    db.query(WorkoutSession).delete()
-    db.query(WorkoutPlan).delete()
-    db.query(User).delete()
-    db.commit()
-    db.close()
+    app.dependency_overrides.clear()
+    ratelimit.reset()
+    progress_router.reset_cache()
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def db():
+    with TestSessionLocal() as session:
+        yield session

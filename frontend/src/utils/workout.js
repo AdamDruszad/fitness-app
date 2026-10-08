@@ -22,6 +22,7 @@ export function prepareWorkoutEntries(dayLogs) {
   const entries = [];
   const errors = [];
   for (const [exerciseName, sets] of Object.entries(dayLogs)) {
+    if (sets.length > 100) errors.push(`${exerciseName}: keep each exercise to 100 sets or fewer.`);
     const validSets = [];
     sets.forEach((set, index) => {
       const weightText = String(set.weight ?? "").trim();
@@ -29,8 +30,8 @@ export function prepareWorkoutEntries(dayLogs) {
       if (!weightText && !repsText) return;
       const weight = weightText === "" ? 0 : Number(weightText);
       const reps = Number(repsText);
-      if (!Number.isFinite(weight) || weight < 0 || !repsText || !Number.isSafeInteger(reps) || reps < 1) {
-        errors.push(`${exerciseName}, set ${index + 1}: use a non-negative weight and a whole number of reps above zero.`);
+      if (!Number.isFinite(weight) || weight < 0 || weight > 2000 || !repsText || !Number.isSafeInteger(reps) || reps < 1 || reps > 10000) {
+        errors.push(`${exerciseName}, set ${index + 1}: use a weight from 0 to 2000 kg and a whole number of reps from 1 to 10000.`);
         return;
       }
       validSets.push({ weight, reps });

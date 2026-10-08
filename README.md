@@ -27,7 +27,7 @@ Built with a **FastAPI** backend and a **React 19 + Vite** frontend, FitAI empow
 - [Environment Variables](#-environment-variables)
 - [API Documentation](#-api-documentation)
 - [Running Tests](#-running-tests)
-- [Deployment (Vercel Multi-Service)](#-deployment-vercel-multi-service)
+- [Deployment (Vercel)](#-deployment-vercel)
 - [Contributing](#-contributing)
 - [License](#-license)
 
@@ -168,7 +168,7 @@ fitness-app/
 │   │   └── main.jsx          # React app entry point
 │   ├── package.json          # Node dependencies & npm scripts
 │   └── vite.config.js        # Vite & Tailwind configuration
-├── vercel.json               # Vercel multi-service project deployment configuration
+├── vercel.json               # Frontend SPA rewrite + security response headers
 └── README.md                 # Project documentation
 ```
 
@@ -332,57 +332,43 @@ npm run build
 
 ---
 
-## 🌐 Deployment (Vercel Multi-Service)
+## 🌐 Deployment (Vercel)
 
-This repository is pre-configured with a root `vercel.json` file for **Vercel Multi-Service Deployment**, allowing both the Vite frontend and the FastAPI backend to run within a single unified project:
+The root `vercel.json` configures a **frontend-only Vite project** with an SPA rewrite (every path falls back to `index.html`, so React Router owns 404s client-side) plus a set of security response headers:
 
 ```json
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
-    "services": {
-        "backend": {
-            "root": "backend",
-            "framework": "fastapi"
-        },
-        "frontend": {
-            "root": "frontend",
-            "framework": "vite",
-            "bindings": [
-                {
-                    "type": "service",
-                    "service": "backend",
-                    "format": "url",
-                    "env": "VITE_API_URL"
-                }
-            ]
-        }
-    },
-    "rewrites": [
-        {
-            "source": "/api/(.*)",
-            "destination": {
-                "service": "backend"
-            }
-        },
-        {
-            "source": "/(.*)",
-            "destination": {
-                "service": "frontend"
-            }
-        }
-    ]
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains" }
+      ]
+    }
+  ]
 }
 ```
 
+There is **no multi-service/backend section in `vercel.json`** — the FastAPI backend is expected to be deployed separately (its own Vercel project, Render/Railway/Fly, or a traditional server), and the frontend points at it through `VITE_API_URL`.
+
 ### Deployment Steps:
 1. Push this repository to GitHub.
-2. In the [Vercel Dashboard](https://vercel.com/dashboard), click **Add New Project** and import `fitness-app`.
-3. Vercel automatically detects the multi-service configuration in `vercel.json`.
+2. Deploy the backend (FastAPI) to your hosting provider of choice; note its public base URL.
+3. In the [Vercel Dashboard](https://vercel.com/dashboard), click **Add New Project** and import `fitness-app` as a Vite project rooted at `frontend/`.
 4. Under project **Settings > Environment Variables**, add:
-   - `DATABASE_URL`: Your production PostgreSQL connection string (from Neon, Supabase, or AWS RDS).
-   - `SECRET_KEY`: A secure random secret key.
-   - `ANTHROPIC_API_KEY`: Your production Anthropic API key.
-5. Deploy the project. The frontend automatically receives `VITE_API_URL` pointing to the backend service.
+   - `VITE_API_URL`: The public base URL of your deployed backend (build-time variable — redeploy after changing it).
+5. Deploy the frontend.
+
+The backend still needs its own environment variables (`DATABASE_URL`, `SECRET_KEY`, `ANTHROPIC_API_KEY`) wherever it is hosted.
+
+> **Note:** A Content-Security-Policy header is intentionally not set here yet — adding one requires confirming every `connect-src`/`img-src` origin used in production (API URL, Anthropic-backed endpoints) so it does not break the app. Treat it as a follow-up task rather than something this file already guarantees.
 
 ---
 

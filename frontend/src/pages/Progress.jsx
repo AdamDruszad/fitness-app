@@ -153,7 +153,7 @@ export default function Progress() {
         <PageHeading eyebrow="Small steps, stronger you" title="Your progress" description="A snapshot of your latest 20 sessions. Open an exercise to explore its history." />
 
         {error ? (
-            <p role="alert" className="px-4 py-2 flex justify-center items-center text-red-400 text-sm border border-red-400 rounded-md">
+            <p role="alert" className="px-4 py-2 flex justify-center items-center text-danger-text text-sm border border-danger-text/40 rounded-md">
             {error}
           </p>
         ) : loading ? (
@@ -161,7 +161,7 @@ export default function Progress() {
             <IconLoader2
               className="text-brand-accent animate-spin"
               size={32}
-            />
+            aria-hidden="true" />
             <p className="text-text-muted text-sm font-medium animate-pulse">
               Loading your progress...
             </p>
@@ -173,7 +173,7 @@ export default function Progress() {
               size={36}
               className="text-text-muted/50"
               stroke={1.5}
-            />
+            aria-hidden="true" />
             <p className="text-text-muted text-sm">
               No workout data yet. Start logging sessions to track your
               progress!
@@ -186,7 +186,7 @@ export default function Progress() {
             <div className="grid grid-cols-3 gap-2.5">
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
                 <div className="text-xs text-text-muted flex flex-wrap items-center gap-1">
-                  <IconCalendar size={12} />
+                  <IconCalendar size={12} aria-hidden="true" />
                   Recent
                 </div>
                 <div className="text-2xl font-bold mt-1 text-text-main">
@@ -195,7 +195,7 @@ export default function Progress() {
               </div>
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
                 <div className="text-xs text-text-muted flex flex-wrap items-center gap-1">
-                  <IconRepeat size={12} />
+                  <IconRepeat size={12} aria-hidden="true" />
                   Last 7 days
                 </div>
                 <div className="text-2xl font-bold mt-1 text-text-main">
@@ -204,7 +204,7 @@ export default function Progress() {
               </div>
               <div className="bg-surface/70 border border-border-subtle rounded-xl p-3.5">
                 <div className="text-xs text-text-muted flex flex-wrap items-center gap-1">
-                  <IconBarbell size={12} />
+                  <IconBarbell size={12} aria-hidden="true" />
                   Exercise logs
                 </div>
                 <div className="text-2xl font-bold mt-1 text-text-main">
@@ -226,7 +226,7 @@ export default function Progress() {
                     size={18}
                     className="text-brand-accent"
                     stroke={2}
-                  />
+                  aria-hidden="true" />
                   <span className="text-sm font-semibold text-text-main">
                     Ideas for your next session
                   </span>
@@ -235,7 +235,7 @@ export default function Progress() {
                   {suggestions.map((s, i) => (
                     <div
                       key={i}
-                      className="bg-white/[0.04] border border-border-subtle rounded-xl px-3.5 py-2.5"
+                      className="bg-raised border border-border-subtle rounded-xl px-3.5 py-2.5"
                     >
                       <div className="text-sm font-medium text-text-main">
                         {s.exercise}
@@ -280,7 +280,7 @@ export default function Progress() {
                             }
                             size={20}
                             stroke={1.5}
-                          />
+                          aria-hidden="true" />
                           <div>
                             <div className="text-sm font-semibold text-text-main">
                               {name}
@@ -300,7 +300,7 @@ export default function Progress() {
                           }`}
                           size={18}
                           stroke={1.5}
-                        />
+                        aria-hidden="true" />
                       </button>
 
                       {/* Expanded Drill-down Performance View */}
@@ -311,13 +311,13 @@ export default function Progress() {
                               <IconLoader2
                                 size={16}
                                 className="text-brand-accent animate-spin"
-                              />
+                              aria-hidden="true" />
                               <span className="text-xs text-text-muted">
                                 Loading history...
                               </span>
                             </div>
                           ) : historyError ? (
-                            <p role="alert" className="text-xs text-red-400 py-2">{historyError}</p>
+                            <p role="alert" className="text-xs text-danger-text py-2">{historyError}</p>
                           ) : exerciseHistory.length === 0 ? (
                             <p className="text-xs text-text-muted py-2">
                               No history data available.
@@ -330,8 +330,8 @@ export default function Progress() {
                                   className="bg-surface/50 border border-border-subtle rounded-lg px-3 py-2"
                                 >
                                   <div className="text-xs text-text-muted mb-1 flex items-center gap-1">
-                                    <IconCalendar size={11} />
-                                    {new Date(entry.date).toLocaleDateString(
+                                    <IconCalendar size={11} aria-hidden="true" />
+                                    {new Date(`${entry.date}T00:00:00`).toLocaleDateString(
                                       "en-US",
                                       {
                                         month: "short",
@@ -344,7 +344,7 @@ export default function Progress() {
                                     {(entry.sets || []).map((set, si) => (
                                       <span
                                         key={si}
-                                        className="text-xs bg-brand-accent/10 text-brand-accent rounded-md px-2 py-0.5 font-medium"
+                                        className="text-xs bg-brand-accent/10 text-accent-text rounded-md px-2 py-0.5 font-medium"
                                       >
                                         {set.weight}kg × {set.reps}
                                       </span>
@@ -374,8 +374,8 @@ export default function Progress() {
                     className="bg-surface/70 border border-border-subtle rounded-xl px-4 py-3 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5 text-sm font-medium text-text-main">
-                      <IconCalendar size={18} className="text-text-muted" />
-                      {new Date(s.session_date).toLocaleDateString("en-US", {
+                      <IconCalendar size={18} className="text-text-muted" aria-hidden="true" />
+                      {new Date(`${s.session_date}T00:00:00`).toLocaleDateString("en-US", {
                         weekday: "short",
                         month: "short",
                         day: "numeric",

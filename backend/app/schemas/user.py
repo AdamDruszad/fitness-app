@@ -5,7 +5,7 @@ Pydantic models for user registration, login, JWT token responses,
 and profile onboarding data validation.
 """
 
-from typing import Optional
+from typing import Optional, Literal
 import uuid
 from pydantic import EmailStr, BaseModel, ConfigDict, Field
 
@@ -31,7 +31,7 @@ class UserLogin(BaseModel):
         password: User password for verification.
     """
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
 
 class Token(BaseModel):
@@ -53,13 +53,13 @@ class UserProfile(BaseModel):
     All fields are optional to allow partial updates via PUT /users/me.
     """
     age: Optional[int] = Field(None, ge=10, le=120, description="Age in years")
-    gender: Optional[str] = Field(None, description="Gender identity ('male', 'female', 'other')")
-    weight_kg: Optional[float] = Field(None, gt=0, description="Current weight in kilograms")
-    goal: Optional[str] = Field(None, description="Fitness goal ('muscle_gain', 'fat_loss', 'strength', 'general')")
-    level: Optional[str] = Field(None, description="Experience level ('beginner', 'intermediate', 'advanced')")
+    gender: Optional[Literal["male", "female", "other"]] = None
+    weight_kg: Optional[float] = Field(None, gt=0, le=1000, allow_inf_nan=False, description="Current weight in kilograms")
+    goal: Optional[Literal["muscle_gain", "fat_loss", "strength", "general"]] = None
+    level: Optional[Literal["beginner", "intermediate", "advanced"]] = None
     days_per_week: Optional[int] = Field(None, ge=1, le=7, description="Available workout days per week")
-    equipment: Optional[str] = Field(None, description="Equipment accessibility ('gym', 'home', 'none')")
-    injuries: Optional[str] = Field(None, description="Notes on past/current injuries or movement restrictions")
+    equipment: Optional[Literal["gym", "home", "none"]] = None
+    injuries: Optional[str] = Field(None, max_length=2000, description="Notes on past/current injuries or movement restrictions")
 
 
 class UserResponse(BaseModel):

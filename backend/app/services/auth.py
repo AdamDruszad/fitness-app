@@ -6,6 +6,7 @@ and JWT access token signing/decoding via python-jose.
 """
 
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 from jose import jwt, JWTError
 from pwdlib import PasswordHash
 from app.config import settings
@@ -56,10 +57,10 @@ def create_access_token(user_id: str) -> str:
         'sub': user_id,
         'exp': exp_time,
     }
-    return jwt.encode(payload_dict, settings.secret_key, algorithm=settings.algorithm)
+    return jwt.encode(payload_dict, settings.secret_key.get_secret_value(), algorithm=settings.algorithm)
 
 
-def decode_access_token(token: str) -> str:
+def decode_access_token(token: str) -> UUID:
     """
     Decodes and validates a signed JWT token, extracting the subject user ID.
     
@@ -72,8 +73,12 @@ def decode_access_token(token: str) -> str:
     Returns:
         str: User ID extracted from the token subject claim.
     """
-    payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    payload = jwt.decode(
+        token, settings.secret_key.get_secret_value(), algorithms=[settings.algorithm],
+        options={"require_exp": True, "require_sub": True},
+    )
     sub = payload.get('sub')
-    if sub is None:
-        raise JWTError("Invalid token: missing subject claim")
-    return sub
+    try:
+        return UUID(sub)
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise JWTError("Invalid token subject") from exc

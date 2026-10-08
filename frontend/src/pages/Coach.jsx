@@ -15,12 +15,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeading from "../components/PageHeading";
 import { Link } from "react-router";
+import { useAuth } from "../hooks/useAuth";
+import { readToken } from "../api/token";
 
 const markdownComponents = {
   table: ({ children }) => <div className="coach-table" role="region" aria-label="Coach table, scroll horizontally for more" tabIndex={0}><table>{children}</table></div>,
 };
 
 export default function Coach() {
+  const { logout } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -101,8 +104,12 @@ export default function Coach() {
     setStreaming(true);
 
     let reader;
+    // SSE frames carry an event name that decides how the following data line is used.
+    let pendingEvent = "message";
+    let receivedDone = false;
+    let serverError = "";
     try {
-      const token = localStorage.getItem("token");
+      const token = readToken();
       const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
       // Initiate SSE streaming request
@@ -118,8 +125,7 @@ export default function Coach() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/";
+          logout();
           return;
         }
         throw new Error(`Server error: ${response.status}`);
@@ -142,27 +148,55 @@ export default function Coach() {
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("event: done")) {
-            // End of stream event from server
+          if (line.startsWith("event: ")) {
+            pendingEvent = line.slice(7).trim();
+            if (pendingEvent === "done") receivedDone = true;
             continue;
           }
-          if (line.startsWith("data: ")) {
-            const payload = line.slice(6);
-            if (!payload || payload === "{}") continue;
-            try {
-              const chunk = JSON.parse(payload);
-              if (typeof chunk !== "string") continue;
-              // Append newly arrived text chunk to assistant's message content
-              setMessages((prev) => prev.map((message) =>
-                message.id === assistantMsg.id
-                  ? { ...message, content: message.content + chunk }
-                  : message
-              ));
-            } catch {
-              // Ignore non-JSON ping/heartbeat lines
-            }
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6);
+          if (!payload || payload === "{}") {
+            pendingEvent = "message";
+            continue;
           }
+          let chunk;
+          try {
+            chunk = JSON.parse(payload);
+          } catch {
+            // Ignore non-JSON ping/heartbeat lines
+            pendingEvent = "message";
+            continue;
+          }
+          if (pendingEvent === "error") {
+            serverError =
+              (typeof chunk === "object" && chunk !== null && typeof chunk.message === "string" && chunk.message) ||
+              "Your coach could not finish this response. Please try again.";
+            pendingEvent = "message";
+            continue;
+          }
+          if (pendingEvent === "done") {
+            receivedDone = true;
+            pendingEvent = "message";
+            continue;
+          }
+          pendingEvent = "message";
+          if (typeof chunk !== "string") continue;
+          // Append newly arrived text chunk to assistant's message content
+          setMessages((prev) => prev.map((message) =>
+            message.id === assistantMsg.id
+              ? { ...message, content: message.content + chunk }
+              : message
+          ));
         }
+      }
+
+      // A stream that stops without the server's closing event is a failure the
+      // user must see, not a silently truncated answer.
+      if (serverError || !receivedDone) {
+        setError(serverError || "The connection closed before your coach finished. Please try again.");
+        setMessages((prev) => prev.filter((message) =>
+          message.id !== assistantMsg.id || message.content
+        ));
       }
     } catch (err) {
       if (controller.signal.aborted) return;
@@ -206,17 +240,17 @@ export default function Coach() {
               <IconLoader2
                 className="text-brand-accent animate-spin"
                 size={28}
-              />
+              aria-hidden="true" />
             </div>
           ) : error && messages.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
-              <p role="alert" className="text-red-400 text-sm">{error}</p>
+              <p role="alert" className="text-danger-text text-sm">{error}</p>
             </div>
           ) : messages.length === 0 ? (
             /* Empty State */
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-4">
               <div className="p-4 bg-brand-accent/10 rounded-full">
-                <IconRobot size={32} className="text-brand-accent/60" />
+                <IconRobot size={32} className="text-brand-accent/60" aria-hidden="true" />
               </div>
               <p className="text-text-muted text-sm max-w-xs">
                 Ask your AI coach about exercises, form tips, recovery, or
@@ -237,7 +271,7 @@ export default function Coach() {
                   className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
                     msg.role === "user"
                       ? "bg-brand-accent/20"
-                      : "bg-white/[0.06] border border-border-subtle"
+                      : "bg-raised border border-border-subtle"
                   }`}
                 >
                   {msg.role === "user" ? (
@@ -245,13 +279,13 @@ export default function Coach() {
                       size={14}
                       className="text-brand-accent"
                       stroke={2}
-                    />
+                    aria-hidden="true" />
                   ) : (
                     <IconRobot
                       size={14}
                       className="text-text-muted"
                       stroke={2}
-                    />
+                    aria-hidden="true" />
                   )}
                 </div>
 
@@ -259,8 +293,8 @@ export default function Coach() {
                 <div
                   className={`coach-bubble rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
                     msg.role === "user"
-                      ? "bg-brand-accent text-white rounded-tr-md whitespace-pre-wrap"
-                      : "bg-white/[0.04] border border-border-subtle text-text-main rounded-tl-md markdown-body"
+                      ? "bg-brand-strong text-white rounded-tr-md whitespace-pre-wrap"
+                      : "bg-raised border border-border-subtle text-text-main rounded-tl-md markdown-body"
                   }`}
                 >
                   {msg.role === "user" ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>}
@@ -278,7 +312,7 @@ export default function Coach() {
 
         {/* Error notification banner */}
         {error && messages.length > 0 && (
-          <div role="alert" className="mt-2 px-3 py-2 text-xs text-red-400 border border-red-400/30 rounded-lg bg-red-400/5 text-center">
+          <div role="alert" className="mt-2 px-3 py-2 text-xs text-danger-text border border-danger-text/30 rounded-lg bg-danger-text/5 text-center">
             {error}
           </div>
         )}
@@ -310,13 +344,13 @@ export default function Coach() {
             type="submit"
             aria-label="Send message"
             disabled={loading || streaming || !input.trim()}
-            className="p-2 rounded-lg bg-brand-accent text-white hover:bg-brand-accent/85 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 cursor-pointer"
+            className="p-2 rounded-lg bg-brand-strong text-white hover:bg-brand-strong-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 cursor-pointer"
             id="coach-send-btn"
           >
             {streaming ? (
-              <IconLoader2 size={18} className="animate-spin" />
+              <IconLoader2 size={18} className="animate-spin" aria-hidden="true" />
             ) : (
-              <IconSend2 size={18} />
+              <IconSend2 size={18} aria-hidden="true" />
             )}
           </button>
         </form>

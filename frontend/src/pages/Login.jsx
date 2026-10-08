@@ -11,6 +11,7 @@ import { Link } from "react-router";
 import client from "../api/client";
 import { IconMoon, IconMail, IconLock, IconSun } from "@tabler/icons-react";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,11 +19,12 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { login } = useAuth();
 
   /**
    * Handles user login submission.
-   * Submits credentials to /auth/login, stores access_token on success,
-   * and routes user to dashboard ("/").
+   * Submits credentials to /auth/login, stores access_token on success, and lets
+   * the route-level redirect in App.jsx move the signed-in user to the right page.
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,8 +35,7 @@ export default function Login() {
     try {
       const { data } = await client.post("/auth/login", { email, password });
       // Persist access token in localStorage for subsequent authenticated API requests
-      localStorage.setItem("token", data.access_token);
-      window.location.href = "/";
+      await login(data.access_token);
     } catch (err) {
       setError(err.response?.status === 401 ? "Invalid email or password." : "Couldn't log in. Check your connection and try again.");
     } finally {
@@ -72,9 +73,9 @@ export default function Login() {
             onClick={toggleTheme}
           >
             {theme === "dark" ? (
-              <IconMoon className="w-4 h-4 text-text-main" stroke={2} />
+              <IconMoon className="w-4 h-4 text-text-main" stroke={2} aria-hidden="true" />
             ) : (
-              <IconSun className="w-4 h-4 text-text-main" stroke={2} />
+              <IconSun className="w-4 h-4 text-text-main" stroke={2} aria-hidden="true" />
             )}
           </button>
         </div>
@@ -104,7 +105,7 @@ export default function Login() {
             <IconMail
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
               stroke={2}
-            />
+            aria-hidden="true" />
             <input
               id="login-email"
               autoComplete="email"
@@ -124,7 +125,7 @@ export default function Login() {
             <IconLock
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
               stroke={2}
-            />
+            aria-hidden="true" />
             <input
               id="login-password"
               autoComplete="current-password"
@@ -139,13 +140,13 @@ export default function Login() {
           </div>
 
           {/* Validation error message */}
-          {error && <p role="alert" className="text-red-400 text-sm -mt-1">{error}</p>}
+          {error && <p role="alert" className="text-danger-text text-sm -mt-1">{error}</p>}
 
           {/* Submit action button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex justify-center items-center text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
+            className="flex justify-center items-center text-white bg-brand-strong rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:bg-brand-strong-hover disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
           >
             {isSubmitting ? (
               <>
@@ -160,7 +161,7 @@ export default function Login() {
 
         <p className="text-text-muted text-sm text-center mt-5">
           Don't have an account?{" "}
-          <Link to="/register" className="text-brand-accent font-medium">
+          <Link to="/register" className="text-accent-text font-medium">
             Register
           </Link>
         </p>

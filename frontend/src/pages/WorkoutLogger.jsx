@@ -109,9 +109,9 @@ export default function WorkoutLogger() {
   return <Layout>
     <Link to="/" className="workout-back"><IconArrowLeft size={15} aria-hidden="true" />Back to your plan</Link>
     <PageHeading eyebrow="Make every set count" title="Log workout" description="Your plan, your pace. Record what you complete." />
-    {loading ? <div className="workout-empty" role="status"><IconBarbell size={32} /><p>Loading your workout…</p></div>
+    {loading ? <div className="workout-empty" role="status"><IconBarbell size={32} aria-hidden="true" /><p>Loading your workout…</p></div>
       : loadError ? <div className="workout-empty"><p role="alert">{loadError}</p><button type="button" className="fitai-secondary-button" onClick={() => setReload(value => value + 1)}>Try again</button></div>
-      : !plan || !days.length ? <div className="workout-empty"><IconBarbell size={36} /><h2>Your first session starts with a plan.</h2><p>Set your preferences to build a workout around you.</p><button className="fitai-primary-button" type="button" onClick={() => navigate("/onboarding")}>Create your plan</button></div>
+      : !plan || !days.length ? <div className="workout-empty"><IconBarbell size={36} aria-hidden="true" /><h2>Your first session starts with a plan.</h2><p>Set your preferences to build a workout around you.</p><button className="fitai-primary-button" type="button" onClick={() => navigate("/onboarding")}>Create your plan</button></div>
       : <>
         <div className="workout-days" role="group" aria-label="Workout day">{days.map(day => <button type="button" key={day.day} disabled={saving} aria-pressed={day.day === activeDay} onClick={() => setActiveDay(day.day)}>{day.day}<span>{day.exercises?.length || 0} exercises</span></button>)}</div>
         <div className="workout-summary"><div><span className="eyebrow">{activeDay} / Your session</span><h2>{currentDay?.focus}</h2><p>{exercises.length} exercises<span>•</span>Leave weight blank for bodyweight (0 kg).</p></div><div className="session-count"><strong>{completedSets}</strong><span>sets entered</span></div></div>

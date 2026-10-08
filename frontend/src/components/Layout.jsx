@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 import { IconLayoutDashboard, IconBarbell, IconMessageChatbot, IconChartLine, IconSettings, IconLogout } from "@tabler/icons-react";
 import Brand from "./Brand";
 import ThemeToggle from "./ThemeToggle";
+import { useEffect } from "react";
 
 const NAV_ITEMS = [
   { to: "/", icon: IconLayoutDashboard, label: "Your plan" },
@@ -14,6 +15,10 @@ const NAV_ITEMS = [
 export default function Layout({ children, contentClassName = "" }) {
   const { logout } = useAuth();
   const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+  }, [pathname]);
   const navigation = NAV_ITEMS.map(({ to, icon: Icon, label }) => <Link key={to} to={to} className={pathname === to ? "is-active" : ""} aria-current={pathname === to ? "page" : undefined}><Icon size={20} stroke={1.7} aria-hidden="true" /><span>{label}</span></Link>);
   return (
     <div className="fitai-shell">
