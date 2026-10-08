@@ -5,7 +5,7 @@
  */
 
 import { useContext } from "react";
-import { ThemeContext } from "../context/ThemeContext";
+import { ThemeContext } from "../context/theme";
 
 /**
  * Hook to consume theme state and toggle handler.

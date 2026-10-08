@@ -6,10 +6,12 @@
  */
 
 import axios from 'axios';
+import { readToken } from './token';
 
 // Instantiate Axios with dynamic API base URL from Vite environment variable or fallback to localhost
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  timeout: 30000,
 });
 
 /**
@@ -18,7 +20,7 @@ const client = axios.create({
  */
 client.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = readToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,9 +37,8 @@ client.interceptors.request.use(
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+    if (error.response?.status === 401 && !error.config?.url?.startsWith('/auth/')) {
+      window.dispatchEvent(new Event('fitai:unauthorized'));
     }
     return Promise.reject(error);
   }

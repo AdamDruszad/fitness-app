@@ -1,11 +1,43 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
 .pytest_cache/
+*.egg-info/
 
-# Environment — Never get seen
-.env
+# Virtual environments
 venv/
+.venv/
+env/
 
-# Here
+# Environment variables
+.env
+.env.*
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE / Editor
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Test scratch files
+test_*.cjs
+test_*.js
+!src/**/test_*.js

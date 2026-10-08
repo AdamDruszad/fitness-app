@@ -32,18 +32,19 @@ export class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen bg-base flex items-center justify-center p-6 text-text-main">
           <div className="bg-surface border border-red-500/30 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
-            <h2 className="text-xl font-bold text-red-400 mb-2">Something went wrong</h2>
+            <h2 className="text-xl font-bold text-danger-text mb-2">Something went wrong</h2>
             <p className="text-text-muted text-sm mb-4">
               An unexpected application error occurred. You can reload the page or navigate back.
             </p>
-            <details className="text-xs text-text-muted/80 bg-input p-3 rounded-lg overflow-x-auto whitespace-pre-wrap border border-border-subtle mb-4">
+            {import.meta.env.DEV && <details className="text-xs text-text-muted/80 bg-input p-3 rounded-lg overflow-x-auto whitespace-pre-wrap border border-border-subtle mb-4">
+              <summary>Error details</summary>
               {this.state.error && this.state.error.toString()}
               <br />
               {this.state.errorInfo && this.state.errorInfo.componentStack}
-            </details>
+            </details>}
             <button
               onClick={() => window.location.reload()}
-              className="bg-brand-accent text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition cursor-pointer"
+              className="bg-brand-strong text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-brand-strong-hover transition cursor-pointer"
             >
               Reload application
             </button>

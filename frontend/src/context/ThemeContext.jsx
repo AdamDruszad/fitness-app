@@ -5,10 +5,8 @@
  * on document.documentElement for Tailwind CSS / custom CSS variable styling.
  */
 
-import { createContext, useState, useEffect } from "react";
-
-// Create React context for theme values and toggle handler
-export const ThemeContext = createContext(null);
+import { useState, useEffect } from "react";
+import { ThemeContext } from "./theme";
 
 /**
  * ThemeProvider component wrapping application root.
@@ -18,12 +16,15 @@ export const ThemeContext = createContext(null);
  */
 export function ThemeProvider({ children }) {
   // Read initial theme preference from localStorage, default to "dark"
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("theme") === "light" ? "light" : "dark"; }
+    catch { return "dark"; }
+  });
 
   // Synchronize CSS class on <html> element and persist in localStorage
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
-    localStorage.setItem("theme", theme);
+    try { localStorage.setItem("theme", theme); } catch { /* Theme works without storage. */ }
   }, [theme]);
 
   // Toggle between dark and light themes

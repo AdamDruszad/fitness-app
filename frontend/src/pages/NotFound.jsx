@@ -13,7 +13,7 @@ export default function NotFound() {
     <Layout>
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
         {/* 404 Icon Illustration */}
-        <IconError404 size={64} className="text-text-muted/50" stroke={1.5} />
+        <IconError404 size={64} className="text-text-muted/50" stroke={1.5} aria-hidden="true" />
         <h1 className="text-2xl font-bold text-text-main">Page not found</h1>
         <p className="text-text-muted text-sm max-w-sm">
           We couldn't find the page you're looking for. It might have been moved or doesn't exist.
@@ -21,7 +21,7 @@ export default function NotFound() {
         {/* Return to Dashboard CTA */}
         <Link
           to="/"
-          className="mt-4 border border-border-subtle bg-brand-accent rounded-lg py-2 px-6 font-medium text-text-main hover:bg-brand-accent/50 transition inline-block cursor-pointer"
+          className="mt-4 fitai-primary-button"
         >
           Go back home
         </Link>

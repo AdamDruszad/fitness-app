@@ -32,7 +32,7 @@ def get_token() -> str:
         "/users/me",
         json={
             "age": 25,
-            "goal": "gain muscles",
+            "goal": "muscle_gain",
             "level": "intermediate",
             "days_per_week": 3,
             "equipment": "gym",

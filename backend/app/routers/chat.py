@@ -6,6 +6,7 @@ and real-time streaming responses via Server-Sent Events (SSE).
 """
 
 import json
+import logging
 from typing import List
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
@@ -18,6 +19,7 @@ from app.schemas.chat import ChatMessageIn, ChatMessageResponse
 from app.services.ai import stream_chat
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/", response_model=List[ChatMessageResponse], status_code=status.HTTP_200_OK)
@@ -88,22 +90,23 @@ def message(
     collected = []
 
     def generate():
-        for chunk in stream_chat(current_user, messages, db):
-            collected.append(chunk)
-            yield f"data: {json.dumps(chunk)}\n\n"
+        try:
+            for chunk in stream_chat(current_user, messages, db):
+                collected.append(chunk)
+                yield f"data: {json.dumps(chunk)}\n\n"
 
-        # Persist full assistant reply to database
-        full_text = "".join(collected)
-        if full_text:
-            response_msg = ChatMessage(
-                role="assistant",
-                content=full_text,
-                user_id=current_user.id
-            )
+            full_text = "".join(collected)
+            if not full_text.strip():
+                raise ValueError("Empty coach response")
+            response_msg = ChatMessage(role="assistant", content=full_text, user_id=current_user.id)
             db.add(response_msg)
             db.commit()
-
-        # Signal completion to frontend reader
+        except Exception as error:
+            db.rollback()
+            logger.warning("Coach response failed (%s)", type(error).__name__)
+            payload = {"message": "Your coach could not finish this response. Please try again."}
+            yield f"event: error\ndata: {json.dumps(payload)}\n\n"
+            return
         yield "event: done\ndata: {}\n\n"
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return StreamingResponse(generate(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})

@@ -9,6 +9,15 @@
   --color-text-muted: #9ca3af;
   --color-brand-accent: #d85a30;
   --color-grid-line: #ffffff;
+  /* Solid accent that still carries white text at WCAG AA (4.8:1). */
+  --color-brand-strong: #bc4722;
+  --color-brand-strong-hover: #a33d1c;
+  /* Accent reserved for text/icons: readable on both themes. */
+  --color-accent-text: var(--fitai-accent-text);
+  /* Error text: readable on both themes. */
+  --color-danger-text: #f87171;
+  /* Raised surface for bubbles and cards (replaces hard-coded white tints). */
+  --color-raised: rgba(255, 255, 255, .045);
 }
 
 .light {
@@ -19,6 +28,8 @@
   --color-text-main: #18181a;
   --color-text-muted: #6b6b68;
   --color-grid-line: #000000;
+  --color-danger-text: #b42318;
+  --color-raised: rgba(0, 0, 0, .04);
 }
 
 html, body, #root {
@@ -72,4 +83,223 @@ input[type="number"] {
 
 .markdown-body p:last-child {
   margin-bottom: 0;
+}
+
+/* Refinements retain FitAI's charcoal and terracotta identity. */
+:root { color-scheme: dark; --fitai-surface-solid: #1e2027; --fitai-accent-text: #ef936d; }
+.light { color-scheme: light; --fitai-surface-solid: #ffffff; --fitai-accent-text: #a94320; }
+body { color: var(--color-text-main); -webkit-font-smoothing: antialiased; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 4px; }
+button:disabled { cursor: not-allowed; }
+[tabindex="-1"]:focus { outline: none; }
+.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; background: var(--color-brand-strong); color: white; padding: 12px 20px; border-radius: 6px; }
+.skip-link:focus { top: 12px; }
+.fitai-shell { min-height: 100dvh; background: var(--color-base); }
+.fitai-header { border-bottom: 1px solid var(--color-border-subtle); background: var(--color-base); }
+.fitai-header-inner { max-width: 1120px; margin: auto; padding: 16px 32px; display: flex; align-items: center; gap: 36px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--color-text-main); font-size: 25px; font-weight: 750; letter-spacing: -.06em; }
+.brand-symbol { width: 7px; height: 27px; background: var(--color-brand-accent); transform: skewX(-12deg); }
+.header-actions { display: flex; gap: 6px; margin-left: auto; }
+.icon-button { display: grid; place-items: center; min-width: 40px; min-height: 40px; border: 1px solid transparent; border-radius: 8px; color: var(--color-text-muted); background: transparent; cursor: pointer; }
+.icon-button:hover { color: var(--color-text-main); background: var(--color-input); border-color: var(--color-border-subtle); }
+.desktop-nav { display: flex; gap: 8px; margin-left: auto; }
+.desktop-nav a { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-radius: 8px; text-decoration: none; color: var(--color-text-muted); font-size: 12px; font-weight: 500; }
+.desktop-nav a.is-active { color: var(--fitai-accent-text); background: color-mix(in srgb, var(--color-brand-accent) 11%, transparent); }
+.desktop-nav a:hover { color: var(--color-text-main); }
+.fitai-content { width: min(100% - 48px, 800px); margin: auto; padding: 36px 0 48px; }
+.mobile-nav { display: none; }
+.eyebrow { color: var(--color-text-muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.page-heading { margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.page-heading h1 { color: var(--color-text-main); font-size: 32px; line-height: 1.2; font-weight: 650; letter-spacing: -.04em; margin: 8px 0; }
+.page-description { font-size: 13px; line-height: 1.7; color: var(--color-text-muted); }
+.workout-back { display: inline-flex; align-items: center; min-height: 40px; gap: 8px; margin: -12px 0 16px; font-size: 12px; color: var(--color-text-muted); text-decoration: none; }
+.workout-back:hover { color: var(--color-text-main); }
+.workout-days { display: flex; gap: 8px; overflow-x: auto; padding: 4px 4px 12px; margin-inline: -4px; scrollbar-width: thin; }
+.workout-days button { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 102px; padding: 12px 16px; border: 1px solid var(--color-border-subtle); background: var(--fitai-surface-solid); color: var(--color-text-muted); border-radius: 10px; font-size: 13px; cursor: pointer; }
+.workout-days button > span { font-size: 10px; opacity: .8; }
+.workout-days button[aria-pressed="true"] { border-color: var(--color-brand-accent); background: color-mix(in srgb, var(--color-brand-accent) 12%, var(--color-base)); color: var(--color-text-main); }
+.workout-days button[aria-pressed="true"] > span { color: var(--fitai-accent-text); }
+.workout-summary { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-block: 24px; }
+.workout-summary h2 { font-size: 23px; font-weight: 600; letter-spacing: -.03em; margin: 6px 0; }
+.workout-summary p { font-size: 11px; color: var(--color-text-muted); line-height: 1.7; }
+.workout-summary p > span { padding: 0 8px; }
+.session-count { text-align: right; flex-shrink: 0; }
+.session-count strong { display: block; font-size: 25px; font-weight: 500; }
+.session-count span { color: var(--color-text-muted); font-size: 10px; }
+.exercise-list { display: flex; flex-direction: column; gap: 20px; }
+.exercise-card { border: 1px solid var(--color-border-subtle); background: var(--fitai-surface-solid); border-radius: 12px; overflow: hidden; }
+.exercise-heading { display: flex; align-items: center; gap: 24px; padding: 16px 24px 16px 16px; border-bottom: 1px solid var(--color-border-subtle); }
+.exercise-heading .exercise-art { width: 154px; max-width: 28%; flex-shrink: 0; }
+.exercise-heading-copy { flex: 1; min-width: 0; }
+.exercise-index { color: var(--color-text-muted); font-size: 9px; letter-spacing: .1em; }
+.exercise-heading h3 { font-weight: 600; font-size: 20px; line-height: 1.3; letter-spacing: -.025em; margin: 7px 0 12px; overflow-wrap: anywhere; }
+.exercise-prescription { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--color-text-muted); font-size: 11px; }
+.exercise-prescription > span { display: inline-flex; align-items: center; gap: 6px; }
+.exercise-prescription b { font-weight: 400; color: var(--fitai-accent-text); }
+.exercise-saved { display: flex; align-items: center; gap: 5px; color: #7dba94; font-size: 11px; align-self: flex-start; margin-top: 5px; }
+.light .exercise-saved { color: #2c7648; }
+.exercise-entry { padding: 20px 24px 12px; }
+.set-grid { display: grid; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 12px; align-items: center; margin-bottom: 8px; }
+.set-labels { margin-bottom: 10px; color: var(--color-text-muted); font-size: 10px; }
+.set-number { font-size: 11px; color: var(--color-text-muted); }
+.set-grid input { width: 100%; min-width: 0; border: 1px solid var(--color-border-subtle); background: var(--color-input); border-radius: 7px; height: 44px; padding: 10px 12px; font-size: 14px; color: var(--color-text-main); }
+.set-grid input::placeholder { color: var(--color-text-muted); opacity: .6; }
+.set-grid input:disabled { opacity: .6; }
+.remove-set { min-width: 40px; min-height: 44px; display: grid; place-items: center; color: var(--color-text-muted); background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
+.remove-set:hover:not(:disabled) { background: #ef444410; color: #ee9b8d; }
+.remove-set:disabled { opacity: .3; }
+.add-set { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; background: transparent; border: 0; color: var(--fitai-accent-text); font-size: 12px; cursor: pointer; }
+.workout-savebar { position: sticky; z-index: 10; bottom: 16px; background: var(--fitai-surface-solid); border: 1px solid var(--color-border-subtle); border-radius: 10px; margin-top: 24px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 24px; box-shadow: 0 6px 20px #0002; }
+.workout-savebar p { font-size: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.workout-savebar p > span { display: block; color: var(--color-text-muted); font-size: 10px; width: 100%; }
+.fitai-primary-button, .fitai-secondary-button { display: inline-flex; align-items: center; justify-content: center; text-align: center; gap: 12px; min-height: 44px; padding: 12px 20px; font-size: 12px; font-weight: 600; border-radius: 7px; cursor: pointer; text-decoration: none; }
+.fitai-primary-button { border: 1px solid var(--color-brand-strong); background: var(--color-brand-strong); color: white; }
+.fitai-primary-button:hover:not(:disabled) { background: var(--color-brand-strong-hover); border-color: var(--color-brand-strong-hover); }
+.fitai-primary-button:disabled { opacity: .45; cursor: not-allowed; }
+.fitai-secondary-button { background: transparent; border: 1px solid var(--color-border-subtle); color: var(--color-text-main); }
+.workout-empty { display: flex; align-items: center; flex-direction: column; justify-content: center; gap: 16px; text-align: center; padding: 60px 24px; }
+.workout-empty > svg { color: var(--fitai-accent-text); }
+.workout-empty h2 { font-size: 20px; font-weight: 600; }
+.workout-empty p { font-size: 13px; color: var(--color-text-muted); }
+.workout-message { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid; border-radius: 8px; margin-top: 20px; font-size: 12px; line-height: 1.7; }
+.workout-message > svg { flex-shrink: 0; margin-top: 2px; }
+.workout-message--error { background: #df63550a; border-color: #df635540; color: #f5a696; }
+.light .workout-message--error { color: #a13626; }
+.workout-message ul { padding-left: 16px; list-style: disc; }
+@media (max-width: 767px) {
+  .desktop-nav { display: none; }
+  .fitai-header-inner { padding: 12px 20px; gap: 20px; }
+  .brand { font-size: 23px; }
+  .header-actions { gap: 2px; }
+  .fitai-content { width: calc(100% - 40px); padding: 28px 0 112px; }
+  .mobile-nav { position: fixed; z-index: 30; bottom: 0; inset-inline: 0; display: flex; justify-content: space-around; background: var(--color-base); border-top: 1px solid var(--color-border-subtle); padding: 10px 8px max(10px, env(safe-area-inset-bottom)); }
+  .mobile-nav a { display: flex; align-items: center; flex-direction: column; gap: 5px; text-decoration: none; color: var(--color-text-muted); font-size: 10px; padding: 4px 16px; min-height: 44px; }
+  .mobile-nav a.is-active { color: var(--fitai-accent-text); }
+  .page-heading h1 { font-size: 28px; }
+  .workout-days button { min-width: 90px; padding: 10px 12px; font-size: 12px; }
+  .workout-summary { gap: 12px; }
+  .workout-summary h2 { font-size: 21px; }
+  .workout-summary p { max-width: 230px; font-size: 10px; }
+  .workout-summary p > span { padding-inline: 5px; }
+  .session-count strong { font-size: 22px; }
+  .session-count span { font-size: 9px; }
+  .exercise-heading { gap: 14px; padding: 14px 16px 14px 10px; flex-wrap: wrap; }
+  .exercise-heading .exercise-art { width: 116px; max-width: 34%; }
+  .exercise-heading h3 { font-size: 17px; margin-bottom: 9px; }
+  .exercise-prescription { font-size: 10px; gap: 7px 10px; }
+  .exercise-saved { margin: -8px 0 0 auto; }
+  .exercise-entry { padding: 16px 14px 8px; }
+  .set-grid { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 36px; gap: 8px; }
+  .set-grid input { padding-inline: 10px; }
+  .remove-set { min-width: 36px; }
+  .workout-savebar { bottom: calc(82px + env(safe-area-inset-bottom)); padding: 14px; gap: 12px; }
+  .workout-savebar p { font-size: 10px; }
+  .workout-savebar p > span { font-size: 9px; }
+  .workout-savebar .fitai-primary-button, .workout-savebar .fitai-secondary-button { padding: 11px 12px; font-size: 11px; flex-shrink: 0; }
+}
+@media (max-width: 370px) {
+  .fitai-content { width: calc(100% - 32px); }
+  .mobile-nav a { padding-inline: 10px; }
+  .workout-savebar { flex-direction: column; gap: 12px; align-items: stretch; }
+  .workout-savebar p > span { display: none; }
+  .exercise-heading h3 { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Shared page hierarchy and responsive training overview. */
+.dashboard-content { max-width: 1040px; width: min(100% - 64px, 1040px); }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 36px; align-items: start; }
+.dashboard-primary, .dashboard-secondary { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.next-workout { padding: 28px; border: 1px solid #d85a304d; border-radius: 14px; background: color-mix(in srgb, var(--color-brand-accent) 10%, var(--color-base)); }
+.next-workout-label { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--fitai-accent-text); font-size: 12px; }
+.next-workout h2 { margin: 18px 0 10px; font-size: clamp(25px, 3vw, 34px); line-height: 1.2; letter-spacing: -.035em; font-weight: 650; }
+.next-workout p { font-size: 12px; color: var(--color-text-muted); }
+.next-workout p > span { padding-inline: 10px; }
+.next-workout .fitai-primary-button { margin-top: 28px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; color: var(--color-text-muted); }
+.section-heading h2 { font-size: 15px; font-weight: 600; color: var(--color-text-main); letter-spacing: -.02em; }
+.section-heading > span { font-size: 10px; }
+.schedule-list { display: flex; flex-direction: column; gap: 8px; }
+.schedule-day { display: flex; gap: 16px; align-items: center; border: 1px solid var(--color-border-subtle); border-radius: 10px; padding: 18px 16px; background: var(--fitai-surface-solid); text-decoration: none; }
+.schedule-day:hover { border-color: var(--color-text-muted); }
+.schedule-day.is-today { border-color: #d85a3070; }
+.schedule-number { color: var(--color-text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.schedule-day h3 { color: var(--color-text-main); font-size: 13px; font-weight: 600; line-height: 1.5; }
+.schedule-day p { color: var(--color-text-muted); font-size: 11px; margin-top: 5px; line-height: 1.6; }
+.schedule-day p > span { padding-inline: 7px; }
+.schedule-day > svg { flex-shrink: 0; margin-left: auto; color: var(--color-text-muted); }
+.today-tag { display: inline-block; color: var(--fitai-accent-text); font-size: 9px; margin-left: 8px; font-weight: 500; }
+.training-overview { padding: 24px; border: 1px solid var(--color-border-subtle); border-radius: 12px; background: var(--fitai-surface-solid); }
+.overview-stats { display: grid; grid-template-columns: 1fr 1fr; margin: 24px 0 20px; gap: 24px; }
+.overview-stats > div + div { padding-left: 24px; border-left: 1px solid var(--color-border-subtle); }
+.overview-stats strong { display: block; font-size: 32px; font-weight: 600; line-height: 1.2; letter-spacing: -.035em; }
+.overview-stats small { font-size: 11px; font-weight: 400; color: var(--color-text-muted); margin-left: 5px; letter-spacing: 0; }
+.overview-stats span { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 9px; }
+.training-overview > p { color: var(--color-text-muted); font-size: 11px; padding-top: 16px; border-top: 1px solid var(--color-border-subtle); }
+.text-link { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; color: var(--fitai-accent-text); font-size: 12px; cursor: pointer; }
+.text-link:hover { text-decoration: underline; }
+.activity-row { display: flex; align-items: center; gap: 13px; padding: 16px 0; border-bottom: 1px solid var(--color-border-subtle); }
+.activity-row > svg { color: var(--color-text-muted); }
+.activity-row strong { font-size: 12px; font-weight: 500; display: block; }
+.activity-row span { display: block; color: var(--color-text-muted); font-size: 11px; margin-top: 5px; }
+.activity-empty { color: var(--color-text-muted); font-size: 12px; line-height: 1.8; padding: 20px; border: 1px dashed var(--color-border-subtle); border-radius: 10px; }
+.dashboard-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; padding: 40px; border: 1px solid var(--color-border-subtle); border-radius: 14px; background: var(--fitai-surface-solid); }
+.dashboard-empty > svg { color: var(--fitai-accent-text); }
+.dashboard-empty h2 { font-size: 26px; font-weight: 600; letter-spacing: -.035em; }
+.dashboard-empty p { color: var(--color-text-muted); font-size: 14px; line-height: 1.7; }
+.coach-content { padding-bottom: 24px; }
+.coach-layout { display: flex; flex-direction: column; height: calc(100dvh - 137px); min-height: 440px; }
+.coach-layout .page-heading { flex-shrink: 0; }
+.coach-conversation { flex: 1; min-height: 0; overflow-y: auto; border: 1px solid var(--color-border-subtle); background: var(--fitai-surface-solid); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 20px; scroll-padding-block: 20px; }
+.coach-bubble { min-width: 0; max-width: calc(100% - 38px); overflow-wrap: anywhere; }
+.coach-note { color: var(--color-text-muted); font-size: 10px; line-height: 1.6; margin-top: 10px; }
+.coach-note a { color: var(--fitai-accent-text); text-decoration: underline; text-underline-offset: 2px; }
+.coach-table { max-width: 100%; overflow-x: auto; margin-block: 16px; scrollbar-width: thin; }
+.markdown-body table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.markdown-body th, .markdown-body td { padding: 10px 12px; border: 1px solid var(--color-border-subtle); min-width: 100px; text-align: left; }
+.markdown-body th { background: var(--color-input); font-weight: 600; }
+.markdown-body :is(h1, h2, h3, h4) { font-size: 16px; font-weight: 650; line-height: 1.5; margin: 18px 0 8px; }
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body a { color: var(--fitai-accent-text); text-decoration: underline; }
+.markdown-body pre { overflow-x: auto; padding: 12px; border-radius: 6px; background: var(--color-input); margin-block: 12px; }
+.markdown-body blockquote { border-left: 2px solid var(--color-brand-accent); padding-left: 12px; margin-block: 12px; color: var(--color-text-muted); }
+.markdown-body hr { border-color: var(--color-border-subtle); margin-block: 18px; }
+.markdown-body img { max-width: 100%; height: auto; }
+.progress-exercise-button > div { min-width: 0; }
+.progress-exercise-button svg { flex-shrink: 0; }
+.progress-exercise-button { gap: 16px; }
+.progress-exercise-button[aria-expanded="true"] .progress-chevron { transform: rotate(180deg); }
+.progress-history { margin: 12px 0 4px; }
+@media (max-width: 900px) {
+  .dashboard-grid { gap: 24px; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .desktop-nav { gap: 0; }
+  .desktop-nav a { padding-inline: 10px; }
+  .fitai-header-inner { gap: 16px; padding-inline: 24px; }
+  .training-overview { padding: 20px; }
+}
+@media (max-width: 767px) {
+  .dashboard-content { width: calc(100% - 40px); }
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .dashboard-primary, .dashboard-secondary { gap: 28px; }
+  .next-workout { padding: 24px; }
+  .next-workout h2 { font-size: 28px; }
+  .next-workout .fitai-primary-button { width: 100%; }
+  .dashboard-empty { padding: 24px; }
+  .coach-layout { height: calc(100dvh - 186px - env(safe-area-inset-bottom)); min-height: 400px; }
+  .coach-layout .page-heading { margin-bottom: 16px; }
+  .coach-layout .page-heading .page-description { display: none; }
+  .coach-conversation { padding: 12px; gap: 16px; }
+  .coach-bubble { font-size: 13px; padding: 12px; }
+  .coach-note { font-size: 9px; }
+  .coach-content { padding-bottom: 90px; }
+}
+@media (max-width: 370px) {
+  .dashboard-content { width: calc(100% - 32px); }
+  .schedule-day { gap: 10px; padding-inline: 12px; }
+  .section-heading { gap: 10px; }
+  .section-heading > span { font-size: 9px; }
 }

@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import client from "../api/client";
+import { apiError } from "../utils/apiError";
 import {
   IconAlertCircle,
   IconMoon,
@@ -16,6 +17,7 @@ import {
   IconSun
 } from "@tabler/icons-react";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -23,10 +25,12 @@ export default function Register() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { login } = useAuth();
 
   /**
    * Handles new account registration form submission.
-   * Calls /auth/register, sets local storage token, and redirects to /onboarding.
+   * Calls /auth/register, stores the token, and lets the route-level redirect in
+   * App.jsx send the new user to /onboarding (or / if they already have a plan).
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,20 +39,20 @@ export default function Register() {
     setError("");
 
     try {
-      const { data } = await client.post("/auth/register", { email, password });
-      localStorage.setItem("token", data.access_token);
-      window.location.href = '/onboarding';
+      const { data } = await client.post("/auth/register", { email: email.trim(), password });
+      await login(data.access_token);
     } catch (err) {
-      setError(err.response?.data?.detail || "Registration failed");
+      setError(apiError(err, "Registration failed. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-base h-screen flex justify-center items-center px-4 relative overflow-hidden">
+    <div className="bg-base min-h-screen flex justify-center items-center px-4 py-8 relative overflow-hidden">
       {/* Decorative ambient background elements */}
       <div
+        aria-hidden="true"
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
           backgroundImage:
@@ -60,7 +64,7 @@ export default function Register() {
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-accent/40 rounded-full blur-3xl pointer-events-none" />
 
       {/* Registration Card Form */}
-      <div className="bg-surface rounded-2xl p-8 w-full max-w-sm border border-border-subtle relative z-10">
+      <div className="bg-surface rounded-2xl p-6 sm:p-8 w-full max-w-sm border border-border-subtle relative z-10">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-7 bg-brand-accent -skew-x-12"></span>
@@ -70,14 +74,15 @@ export default function Register() {
           </div>
           {/* Theme switcher toggle */}
           <button
-            aria-label="Change Theme"
-            className="bg-input rounded-full p-2.5 border border-border-subtle shrink-0 cursor-pointer hover:bg-surface/50"
+            type="button"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            className="bg-input rounded-full p-2.5 min-w-11 min-h-11 flex items-center justify-center border border-border-subtle shrink-0 cursor-pointer hover:bg-surface/50"
             onClick={toggleTheme}
           >
             {theme === "dark" ? (
-              <IconMoon className="w-4 h-4 text-text-main" stroke={2} />
+              <IconMoon className="w-4 h-4 text-text-main" stroke={2} aria-hidden="true" />
             ) : (
-              <IconSun className="w-4 h-4 text-text-main" stroke={2} />
+              <IconSun className="w-4 h-4 text-text-main" stroke={2} aria-hidden="true" />
             )}
           </button>
         </div>
@@ -107,68 +112,86 @@ export default function Register() {
 
         {/* Error notification banner */}
         {error && (
-          <div className="flex items-center gap-2 text-red-400 text-sm border border-red-800 rounded-lg px-3 py-2 -mt-1 mb-4">
-            <IconAlertCircle className="w-4 h-4 shrink-0" stroke={2} />
+          <div id="registration-error" role="alert" className="workout-message workout-message--error mb-4">
+            <IconAlertCircle className="w-4 h-4 shrink-0" stroke={2} aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3">
+        <form onSubmit={handleSubmit} aria-busy={isSubmitting}>
+          <fieldset disabled={isSubmitting} className="grid grid-cols-1 gap-3 min-w-0">
+            <legend className="sr-only">Account details</legend>
           {/* Email field */}
+          <label htmlFor="register-email" className="text-sm font-medium text-text-main">Email</label>
           <div className="relative">
             <IconMail
+              aria-hidden="true"
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
               stroke={2}
             />
             <input
-              aria-label="Email"
+              id="register-email"
+              name="email"
+              aria-describedby={error ? "registration-error" : undefined}
               className="w-full bg-input border border-border-subtle text-text-main placeholder:text-text-muted rounded-xl pl-10 pr-3 py-3 outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/30 transition"
               type="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
               required
             />
           </div>
 
           {/* Password field with minimum length requirement */}
+          <label htmlFor="register-password" className="text-sm font-medium text-text-main">Password</label>
           <div className="relative">
             <IconLock
+              aria-hidden="true"
               className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2"
               stroke={2}
             />
             <input
-              aria-label="Password"
+              id="register-password"
+              name="password"
+              aria-describedby={error ? "password-hint registration-error" : "password-hint"}
               className="w-full bg-input border border-border-subtle text-text-main placeholder:text-text-muted rounded-xl pl-10 pr-3 py-3 outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/30 transition"
               type="password"
+              autoComplete="new-password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
               required
               minLength={8}
+              maxLength={128}
             />
           </div>
+
+          <p id="password-hint" className="text-xs text-text-muted">Use 8–128 characters.</p>
 
           {/* Submit action button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex justify-center items-center text-white bg-brand-accent rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:opacity-90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
+            className="flex justify-center items-center text-white bg-brand-strong rounded-xl px-2 py-3 mt-2 font-semibold shadow-lg shadow-brand-accent/20 hover:bg-brand-strong-hover disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed transition"
           >
             {isSubmitting ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                <span aria-hidden="true" className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
                 Creating account...
               </>
             ) : (
               "Create account"
             )}
           </button>
+          </fieldset>
         </form>
 
         <p className="text-text-muted text-sm text-center mt-5">
           Already have an account?{" "}
-          <Link to="/login" className="text-brand-accent font-medium">
+          <Link to="/login" className="text-accent-text font-medium">
             Log in
           </Link>
         </p>

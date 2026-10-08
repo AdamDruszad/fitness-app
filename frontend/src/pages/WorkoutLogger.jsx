@@ -1,458 +1,149 @@
-/**
- * @file WorkoutLogger.jsx
- * @description Interactive workout logging interface.
- * Allows users to track weights (kg) and reps for each exercise in their active plan day,
- * add/remove sets dynamically, and save the session to the database.
- * Uses Promise.allSettled to ensure individual exercise failures do not discard successful logs.
- */
-
 import Layout from "../components/Layout";
+import PageHeading from "../components/PageHeading";
+import ExerciseArtwork from "../components/ExerciseArtwork";
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, Link } from "react-router";
 import client from "../api/client";
-import {
-  IconBarbell,
-  IconPlus,
-  IconTrash,
-  IconCheck,
-  IconAlertTriangle,
-} from "@tabler/icons-react";
+import { prepareWorkoutEntries, createWorkoutSaver, getNextTrainingDay } from "../utils/workout";
+import { IconBarbell, IconPlus, IconTrash, IconCheck, IconClock, IconArrowLeft, IconAlertTriangle } from "@tabler/icons-react";
 
 export default function WorkoutLogger() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const [plan, setPlan] = useState();
+  const requestedDay = typeof location.state?.day === "string" ? location.state.day : location.state?.day?.day;
+  const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [reload, setReload] = useState(0);
   const [activeDay, setActiveDay] = useState(null);
-  
-  // State structure: { [dayName]: { [exerciseName]: [ { weight: '', reps: '' }, ... ] } }
   const [logs, setLogs] = useState({});
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  const [outcomes, setOutcomes] = useState({});
+  const [validation, setValidation] = useState({});
+  const saver = useRef(null);
+  const savingRef = useRef(false);
+  const inputRefs = useRef({});
+  const pendingFocus = useRef(null);
+  if (!saver.current) saver.current = createWorkoutSaver(client);
 
-  // Reference for smooth scrolling down when an additional set is added
-  const lastSetRef = useRef(null);
-
-  /**
-   * Fetches active workout plan on mount.
-   * Resolves initial active day in order of priority:
-   * 1. location.state.day passed from Dashboard route navigation
-   * 2. Today's weekday name if present in the plan
-   * 3. First day in the plan
-   */
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
-    client
-      .get("/plans/current")
-      .then((r) => {
-        const p = r.data;
-        setPlan(p);
-
-        const stateDay = location.state?.day;
-        const todayName = new Date().toLocaleDateString("en-US", {
-          weekday: "long",
+    setLoadError("");
+    client.get("/plans/current", { signal: controller.signal }).then(({ data }) => {
+      if (controller.signal.aborted) return;
+      setPlan(data);
+      const days = data?.plan_data?.days || [];
+      const initialDay = days.find(day => day.day === requestedDay) || getNextTrainingDay(days) || days[0];
+      setActiveDay(initialDay?.day || null);
+      setLogs(previous => {
+        const next = { ...previous };
+        days.forEach(day => {
+          const dayLogs = { ...(next[day.day] || {}) };
+          (day.exercises || []).forEach(exercise => {
+            const name = exercise.name || exercise.exercise;
+            if (!dayLogs[name]) dayLogs[name] = [{ weight: "", reps: "" }];
+          });
+          next[day.day] = dayLogs;
         });
-        const days = p?.plan_data?.days || [];
-        const match =
-          days.find((d) => d.day === stateDay) ||
-          days.find((d) => d.day === todayName) ||
-          days[0];
-        if (match) {
-          setActiveDay(match.day);
-        }
-      })
-      .catch((err) => {
-        if (err.response?.status === 404) {
-          setPlan(null);
-        } else {
-          setError("Could not load your plan");
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const days = plan?.plan_data?.days || [];
-  const currentDay = days.find((d) => d.day === activeDay);
-  const exercises = currentDay?.exercises || [];
-
-  /**
-   * Initializes empty set entries for exercises in activeDay if not already created.
-   */
-  useEffect(() => {
-    if (!activeDay || exercises.length === 0) return;
-    setLogs((prev) => {
-      const dayLogs = prev[activeDay] || {};
-      let changed = false;
-      const updated = { ...dayLogs };
-      exercises.forEach((ex) => {
-        const name = ex.name || ex.exercise;
-        if (!updated[name]) {
-          updated[name] = [{ weight: "", reps: "" }];
-          changed = true;
-        }
+        return next;
       });
-      if (!changed) return prev;
-      return { ...prev, [activeDay]: updated };
-    });
-  }, [activeDay]); // eslint-disable-line react-hooks/exhaustive-deps
+    }).catch(error => {
+      if (controller.signal.aborted) return;
+      if (error.response?.status === 404) setPlan(null);
+      else setLoadError("Could not load your plan. Check your connection and try again.");
+    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [requestedDay, reload]);
 
-  /**
-   * Auto-scrolls to the last added set whenever logs update.
-   */
   useEffect(() => {
-    if (lastSetRef.current) {
-      lastSetRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      lastSetRef.current = null;
+    const input = inputRefs.current[pendingFocus.current];
+    if (input) {
+      input.focus({ preventScroll: true });
+      input.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "nearest" });
+      pendingFocus.current = null;
     }
   }, [logs]);
 
-  /**
-   * Updates weight or rep value for a specific exercise and set index.
-   */
-  function updateSet(exerciseName, setIndex, field, value) {
-    setLogs((prev) => {
-      const dayLogs = { ...(prev[activeDay] || {}) };
-      const sets = [...(dayLogs[exerciseName] || [])];
-      sets[setIndex] = { ...sets[setIndex], [field]: value };
-      dayLogs[exerciseName] = sets;
-      return { ...prev, [activeDay]: dayLogs };
-    });
+  const days = plan?.plan_data?.days || [];
+  const currentDay = days.find(day => day.day === activeDay);
+  const exercises = currentDay?.exercises || [];
+  const dayLogs = logs[activeDay] || {};
+  const outcome = outcomes[activeDay] || { saved: [], failed: [], complete: false, error: "" };
+  const prepared = prepareWorkoutEntries(dayLogs);
+  const enteredSets = Object.values(dayLogs).flat().filter(set => set.weight !== "" || set.reps !== "").length;
+  const completedSets = prepared.entries.reduce((total, entry) => total + entry.sets.length, 0);
+  const canSave = !saving && !outcome.complete && (enteredSets > 0 || outcome.saved.length > 0);
+
+  function updateSets(name, update) {
+    if (savingRef.current || outcome.saved.includes(name) || outcome.complete) return;
+    setLogs(previous => ({ ...previous, [activeDay]: { ...previous[activeDay], [name]: update(previous[activeDay]?.[name] || []) } }));
   }
-
-  /**
-   * Appends a new set row for the specified exercise.
-   */
-  function addSet(exerciseName) {
-    setLogs((prev) => {
-      const dayLogs = { ...(prev[activeDay] || {}) };
-      dayLogs[exerciseName] = [
-        ...(dayLogs[exerciseName] || []),
-        { weight: "", reps: "" },
-      ];
-      return { ...prev, [activeDay]: dayLogs };
-    });
+  function addSet(name) {
+    pendingFocus.current = `${activeDay}:${name}:${dayLogs[name]?.length || 0}`;
+    updateSets(name, sets => [...sets, { weight: "", reps: "" }]);
   }
-
-  /**
-   * Removes a set row from the specified exercise.
-   */
-  function removeSet(exerciseName, setIndex) {
-    setLogs((prev) => {
-      const dayLogs = { ...(prev[activeDay] || {}) };
-      const sets = [...(dayLogs[exerciseName] || [])];
-      sets.splice(setIndex, 1);
-      dayLogs[exerciseName] = sets;
-      return { ...prev, [activeDay]: dayLogs };
-    });
+  function removeSet(name, index) {
+    updateSets(name, sets => sets.filter((_, i) => i !== index));
   }
-
-  // Check if there is valid numerical data entered for the active day
-  const activeDayLogs = logs[activeDay] || {};
-  const hasData = Object.values(activeDayLogs).some((sets) =>
-    sets.some((s) => s.weight !== "" && s.reps !== "")
-  );
-
-  /**
-   * Submits the completed workout session and all recorded exercise sets to the backend.
-   */
   async function handleSave() {
-    if (!hasData || saving) return;
-
+    if (!canSave || savingRef.current) return;
+    setValidation(previous => ({ ...previous, [activeDay]: true }));
+    if (prepared.errors.length) return;
+    if (!prepared.entries.length) return;
+    const day = activeDay;
+    savingRef.current = true;
     setSaving(true);
-    setSaveError("");
-
+    setOutcomes(previous => ({ ...previous, [day]: { ...outcome, error: "" } }));
     try {
-      // Step 1: Create session record with today's date formatted as YYYY-MM-DD
-      const d = new Date();
-      const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const sessionRes = await client.post("/sessions", {
-        session_date: today,
-      });
-      const sessionId = sessionRes.data.id;
-
-      // Step 2: Build individual exercise log promises
-      const entries = Object.entries(activeDayLogs)
-        .map(([exerciseName, sets]) => {
-          const validSets = sets
-            .filter((s) => s.weight !== "" && s.reps !== "")
-            .map((s) => ({
-              weight: parseFloat(s.weight),
-              reps: parseInt(s.reps, 10),
-            }))
-            // Filter out NaN numbers to prevent FastAPI 422 Unprocessable Entity
-            .filter((s) => !Number.isNaN(s.weight) && !Number.isNaN(s.reps));
-
-          if (validSets.length === 0) return null;
-
-          return {
-            exerciseName,
-            promise: client.post(`/sessions/${sessionId}/logs`, {
-              exercise_name: exerciseName,
-              sets_data: validSets,
-            }),
-          };
-        })
-        .filter(Boolean);
-
-      // Step 3: Dispatch logs in parallel using Promise.allSettled
-      const results = await Promise.allSettled(
-        entries.map((e) => e.promise)
-      );
-
-      const failed = entries
-        .filter((_, i) => results[i].status === "rejected")
-        .map((e) => e.exerciseName);
-
-      if (failed.length === 0 && entries.length > 0) {
-        setSaved(true);
-        setTimeout(() => navigate("/"), 1500);
-      } else if (entries.length === 0) {
-        setSaveError("No valid data to save. Check your numbers and try again.");
-      } else if (failed.length === entries.length) {
-        setSaveError("Failed to save any exercises. Please try again.");
-      } else {
-        const savedCount = entries.length - failed.length;
-        setSaveError(
-          `${savedCount}/${entries.length} exercises saved. Failed: ${failed.join(", ")}.`
-        );
-      }
+      const result = await saver.current.save(day, prepared.entries);
+      setOutcomes(previous => ({ ...previous, [day]: { ...result, complete: result.failed.length === 0, error: result.failed.length ? `Still to save: ${result.failed.join(", ")}. Your saved exercises are safe; retry will only send the remaining ones.` : "" } }));
     } catch {
-      setSaveError("Could not create session. Please try again.");
+      setOutcomes(previous => ({ ...previous, [day]: { ...outcome, error: "Could not create the session. Your entries are still here. Please try again." } }));
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
-  /**
-   * Switches the active day tab. Preserves logged set entries per day.
-   */
-  function switchDay(dayName) {
-    if (dayName === activeDay) return;
-    setActiveDay(dayName);
-    setSaved(false);
-    setSaveError("");
-  }
-
-  return (
-    <Layout>
-      <div className="flex flex-col gap-5">
-        <h1 className="text-3xl font-bold text-text-main">Log workout</h1>
-
-        {/* Plan Loading / Error States */}
-        {error ? (
-          <p className="px-4 py-2 flex justify-center items-center text-red-400 text-sm -mt-1 border border-red-400 rounded-md shadow-xl/50 shadow-red-400/40">
-            {error}
-          </p>
-        ) : loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="p-4 bg-brand-accent/10 rounded-full animate-pulse">
-              <IconBarbell
-                className="text-brand-accent"
-                size={32}
-                stroke={1.5}
-              />
+  return <Layout>
+    <Link to="/" className="workout-back"><IconArrowLeft size={15} aria-hidden="true" />Back to your plan</Link>
+    <PageHeading eyebrow="Make every set count" title="Log workout" description="Your plan, your pace. Record what you complete." />
+    {loading ? <div className="workout-empty" role="status"><IconBarbell size={32} aria-hidden="true" /><p>Loading your workout…</p></div>
+      : loadError ? <div className="workout-empty"><p role="alert">{loadError}</p><button type="button" className="fitai-secondary-button" onClick={() => setReload(value => value + 1)}>Try again</button></div>
+      : !plan || !days.length ? <div className="workout-empty"><IconBarbell size={36} aria-hidden="true" /><h2>Your first session starts with a plan.</h2><p>Set your preferences to build a workout around you.</p><button className="fitai-primary-button" type="button" onClick={() => navigate("/onboarding")}>Create your plan</button></div>
+      : <>
+        <div className="workout-days" role="group" aria-label="Workout day">{days.map(day => <button type="button" key={day.day} disabled={saving} aria-pressed={day.day === activeDay} onClick={() => setActiveDay(day.day)}>{day.day}<span>{day.exercises?.length || 0} exercises</span></button>)}</div>
+        <div className="workout-summary"><div><span className="eyebrow">{activeDay} / Your session</span><h2>{currentDay?.focus}</h2><p>{exercises.length} exercises<span>•</span>Leave weight blank for bodyweight (0 kg).</p></div><div className="session-count"><strong>{completedSets}</strong><span>sets entered</span></div></div>
+        {!exercises.length && <div className="workout-empty"><h2>A day to recharge.</h2><p>No exercises scheduled for {activeDay}. Choose another training day above.</p></div>}
+        <div className="exercise-list">{exercises.map((exercise, exerciseIndex) => {
+          const name = exercise.name || exercise.exercise;
+          const sets = dayLogs[name] || [];
+          const isSaved = outcome.saved.includes(name);
+          const locked = saving || isSaved || outcome.complete;
+          const rest = exercise.rest_seconds;
+          return <article className={`exercise-card${isSaved ? " is-saved" : ""}`} key={name} aria-labelledby={`exercise-${exerciseIndex}`}>
+            <div className="exercise-heading">
+              <ExerciseArtwork name={name} />
+              <div className="exercise-heading-copy"><span className="exercise-index">EXERCISE {String(exerciseIndex + 1).padStart(2, "0")}</span><h3 id={`exercise-${exerciseIndex}`}>{name}</h3><div className="exercise-prescription">{exercise.sets && exercise.reps && <span>{exercise.sets} sets <b>×</b> {exercise.reps}</span>}{Number.isFinite(Number(rest)) && Number(rest) > 0 && <span><IconClock size={14} aria-hidden="true" />{rest}s rest</span>}</div></div>
+              {isSaved && <span className="exercise-saved"><IconCheck size={16} aria-hidden="true" />Saved</span>}
             </div>
-            <p className="text-text-muted text-sm font-medium animate-pulse">
-              Loading your plan...
-            </p>
-          </div>
-        ) : plan === null ? (
-          <div className="flex flex-col items-center gap-3 py-12">
-            <IconAlertTriangle
-              className="text-text-muted"
-              size={32}
-              stroke={1.5}
-            />
-            <p className="text-text-muted text-sm">
-              You need a workout plan first.
-            </p>
-            <button
-              className="border border-border-subtle bg-brand-accent rounded-lg py-2 px-4 font-medium text-text-main hover:bg-brand-accent/50 transition cursor-pointer"
-              type="button"
-              onClick={() => navigate("/onboarding")}
-            >
-              Generate a Plan
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Day Selector Tabs */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-              {days.map((d) => {
-                const isActive = d.day === activeDay;
-                return (
-                  <button
-                    key={d.day}
-                    type="button"
-                    onClick={() => switchDay(d.day)}
-                    className={`shrink-0 px-3.5 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-brand-accent text-white"
-                        : "bg-surface/70 border border-border-subtle text-text-muted hover:text-text-main hover:border-text-muted/30"
-                    }`}
-                  >
-                    {d.day.slice(0, 3)}
-                  </button>
-                );
-              })}
+            <div className="exercise-entry"><div className="set-grid set-labels" aria-hidden="true"><span>Set</span><span>Weight / kg</span><span>Reps</span><span /></div>
+              {sets.map((set, index) => <div className="set-grid" key={index}><span className="set-number">{String(index + 1).padStart(2, "0")}</span>
+                <input type="number" min="0" step="0.5" inputMode="decimal" placeholder="0" disabled={locked} aria-label={`${name}, set ${index + 1}, weight in kilograms`} ref={element => { inputRefs.current[`${activeDay}:${name}:${index}`] = element; }} value={set.weight} onChange={event => updateSets(name, rows => rows.map((row, i) => i === index ? { ...row, weight: event.target.value } : row))} />
+                <input type="number" min="1" step="1" inputMode="numeric" placeholder="—" disabled={locked} aria-label={`${name}, set ${index + 1}, repetitions`} value={set.reps} onChange={event => updateSets(name, rows => rows.map((row, i) => i === index ? { ...row, reps: event.target.value } : row))} />
+                <button type="button" disabled={locked} className="remove-set" onClick={() => removeSet(name, index)} aria-label={`Remove ${name} set ${index + 1}`}><IconTrash size={16} aria-hidden="true" /></button>
+              </div>)}
+              {!locked && <button className="add-set" type="button" onClick={() => addSet(name)}><IconPlus size={15} aria-hidden="true" />Add set<span className="sr-only"> for {name}</span></button>}
             </div>
-
-            {/* Current Day Focus Summary */}
-            {currentDay && (
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-text-main">
-                    {currentDay.focus}
-                  </h2>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {exercises.length} exercises &middot; {activeDay}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Exercise Set Input Cards */}
-            <div className="flex flex-col gap-4">
-              {exercises.map((ex) => {
-                const name = ex.name || ex.exercise;
-                const sets = activeDayLogs[name] || [];
-
-                return (
-                  <div
-                    key={name}
-                    className="bg-surface/70 border border-border-subtle rounded-xl overflow-hidden"
-                  >
-                    {/* Exercise Header */}
-                    <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <IconBarbell
-                          className="text-brand-accent"
-                          size={18}
-                          stroke={1.5}
-                        />
-                        <span className="text-sm font-semibold text-text-main">
-                          {name}
-                        </span>
-                      </div>
-                      {ex.sets && ex.reps && (
-                        <span className="text-xs text-text-muted">
-                          Target: {ex.sets}&times;{ex.reps}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Sets Input Table */}
-                    <div className="px-4 py-3">
-                      {/* Column Header Titles */}
-                      <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 mb-2">
-                        <span className="text-[11px] text-text-muted font-medium uppercase tracking-wider">
-                          Set
-                        </span>
-                        <span className="text-[11px] text-text-muted font-medium uppercase tracking-wider">
-                          kg
-                        </span>
-                        <span className="text-[11px] text-text-muted font-medium uppercase tracking-wider">
-                          Reps
-                        </span>
-                        <span />
-                      </div>
-
-                      {/* Set Input Rows */}
-                      {sets.map((s, idx) => (
-                        <div
-                          key={idx}
-                          ref={idx === sets.length - 1 ? lastSetRef : null}
-                          className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 mb-2 items-center"
-                        >
-                          <span className="text-xs text-text-muted font-medium text-center">
-                            {idx + 1}
-                          </span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0"
-                            value={s.weight}
-                            onChange={(e) =>
-                              updateSet(name, idx, "weight", e.target.value)
-                            }
-                            className="bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-main placeholder:text-text-muted/40 focus:outline-none focus:border-brand-accent/50 transition"
-                          />
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={s.reps}
-                            onChange={(e) =>
-                              updateSet(name, idx, "reps", e.target.value)
-                            }
-                            className="bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-main placeholder:text-text-muted/40 focus:outline-none focus:border-brand-accent/50 transition"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeSet(name, idx)}
-                            className="flex items-center justify-center text-text-muted hover:text-red-400 transition cursor-pointer"
-                            aria-label={`Remove set ${idx + 1}`}
-                          >
-                            <IconTrash size={15} stroke={1.5} />
-                          </button>
-                        </div>
-                      ))}
-
-                      {/* Add Set Button */}
-                      <button
-                        type="button"
-                        onClick={() => addSet(name)}
-                        className="flex items-center gap-1.5 text-xs text-brand-accent font-medium mt-1 hover:text-brand-accent/70 transition cursor-pointer"
-                      >
-                        <IconPlus size={14} stroke={2} />
-                        Add set
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Error Message */}
-            {saveError && (
-              <p className="px-4 py-2 flex justify-center items-center text-red-400 text-sm border border-red-400 rounded-md shadow-xl/50 shadow-red-400/40">
-                {saveError}
-              </p>
-            )}
-
-            {/* Save Action Status */}
-            {saved ? (
-              <div className="flex items-center justify-center gap-2 py-3.5 px-4 text-[15px] font-bold text-green-400 rounded-xl bg-green-400/10 border border-green-400/30">
-                <IconCheck size={20} />
-                Session saved!
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={!hasData || saving}
-                onClick={handleSave}
-                className={`flex items-center justify-center gap-2 py-3.5 px-4 active:scale-[0.98] transition text-[15px] font-bold rounded-xl cursor-pointer ${
-                  hasData && !saving
-                    ? "text-white bg-brand-accent hover:bg-brand-accent/90"
-                    : "text-text-muted/50 bg-surface/50 border border-border-subtle cursor-not-allowed"
-                }`}
-              >
-                {saving ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save session"
-                )}
-              </button>
-            )}
-          </>
-        )}
-      </div>
-    </Layout>
-  );
+          </article>;
+        })}</div>
+        {validation[activeDay] && prepared.errors.length > 0 && <div className="workout-message workout-message--error" role="alert"><IconAlertTriangle size={19} aria-hidden="true" /><div><strong>Check your entries</strong><ul>{prepared.errors.map(message => <li key={message}>{message}</li>)}</ul></div></div>}
+        {outcome.error && <div className="workout-message workout-message--error" role="alert"><IconAlertTriangle size={19} aria-hidden="true" /><p>{outcome.error}</p></div>}
+        {exercises.length > 0 && <div className="workout-savebar">
+          {outcome.complete ? <><p role="status"><IconCheck size={18} aria-hidden="true" /><strong>Session saved.</strong> Nice work.</p><Link to="/" className="fitai-secondary-button">Back to your plan</Link></> : <><p>{completedSets} sets across {prepared.entries.length} exercises<span>Empty rows are skipped.</span></p><button type="button" className="fitai-primary-button" onClick={handleSave} disabled={!canSave}>{saving ? "Saving session…" : outcome.failed.length ? "Retry remaining exercises" : "Save session"}{!saving && <IconCheck size={17} aria-hidden="true" />}</button></>}
+        </div>}
+      </>}
+  </Layout>;
 }
+

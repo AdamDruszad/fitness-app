@@ -9,11 +9,13 @@ and analyze progressive overload suggestions based on workout history.
 import json
 from typing import Generator, List, Dict, Any
 from anthropic import Anthropic
+from pydantic import TypeAdapter
 from sqlalchemy.orm import Session
 from app.config import settings
+from app.schemas.plan import ProgressSuggestion
 
 # Initialize Anthropic Claude API client
-client = Anthropic(api_key=settings.anthropic_api_key)
+client = Anthropic(api_key=settings.anthropic_api_key.get_secret_value(), timeout=60.0, max_retries=1)
 
 # System prompt instructing Claude to generate structured JSON workout plans
 PLAN_SYSTEM_PROMPT = """You are an expert strength and conditioning coach.
@@ -185,4 +187,8 @@ def get_progressive_overload_suggestions(user, db: Session) -> List[Dict[str, An
 
     answer = response.content[0].text.strip()
     answer = _strip_code_fences(answer)
-    return json.loads(answer)
+    parsed = json.loads(answer)
+    suggestions = TypeAdapter(List[ProgressSuggestion]).validate_python(parsed)
+    if len(suggestions) > 20:
+        raise ValueError("Too many progress suggestions")
+    return [suggestion.model_dump() for suggestion in suggestions]

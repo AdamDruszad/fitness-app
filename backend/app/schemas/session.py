@@ -6,9 +6,9 @@ and exercise performance sets.
 """
 
 from datetime import date, datetime
-from typing import List, Optional
+from typing import Annotated, List, Optional
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 
 class SetData(BaseModel):
@@ -19,8 +19,8 @@ class SetData(BaseModel):
         weight: Weight in kilograms (e.g. 80.0; can be 0 for bodyweight exercises).
         reps: Completed repetitions count.
     """
-    weight: float = Field(ge=0, description="Weight used in kg")
-    reps: int = Field(ge=0, description="Number of repetitions completed")
+    weight: float = Field(ge=0, le=2000, allow_inf_nan=False, description="Weight used in kg")
+    reps: int = Field(ge=1, le=10000, strict=True, description="Number of repetitions completed")
 
 
 class ExerciseLogIn(BaseModel):
@@ -31,8 +31,8 @@ class ExerciseLogIn(BaseModel):
         exercise_name: Title of the exercise.
         sets_data: List of individual set metrics.
     """
-    exercise_name: str
-    sets_data: List[SetData]
+    exercise_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    sets_data: List[SetData] = Field(min_length=1, max_length=100)
 
 
 class ExerciseLogResponse(BaseModel):
@@ -54,7 +54,7 @@ class SessionCreate(BaseModel):
         notes: Optional comments about form, fatigue, or equipment used.
     """
     session_date: date
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=2000)
 
 
 class SessionResponse(BaseModel):

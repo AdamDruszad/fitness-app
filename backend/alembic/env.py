@@ -10,7 +10,8 @@ from alembic import context
 config = context.config
 
 from app.config import settings
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# ConfigParser treats '%' as interpolation; encoded credentials must remain literal.
+config.set_main_option("sqlalchemy.url", settings.database_url.get_secret_value().replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
