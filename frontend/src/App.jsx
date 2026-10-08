@@ -60,15 +60,15 @@ export default function App() {
           {/* Protected Routes (require authenticated user session) */}
           <Route
             path="/onboarding"
-            element={user ? <Onboarding /> : <Navigate to="/login" replace />}
+            element={protectedPage(<Onboarding />)}
           />
           <Route
             path="/"
-            element={user ? <Dashboard /> : <Navigate to="/login" replace />}
+            element={protectedPage(<Dashboard />)}
           />
           <Route
             path="/log"
-            element={user ? <WorkoutLogger /> : <Navigate to="/login" replace />}
+            element={protectedPage(<WorkoutLogger />)}
           />
           <Route
             path="/coach"
@@ -76,7 +76,7 @@ export default function App() {
           />
           <Route
             path="/progress"
-            element={user ? <Progress /> : <Navigate to="/login" replace />}
+            element={protectedPage(<Progress />)}
           />
 
           {/* 404 Catch-All Route */}
