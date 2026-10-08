@@ -12,10 +12,11 @@ import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import WorkoutLogger from "./pages/WorkoutLogger";
-import Coach from "./pages/Coach";
+import { lazy, Suspense } from "react";
 import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 import { ErrorBoundary } from "./ErrorBoundary";
+const Coach = lazy(() => import("./pages/Coach"));
 
 /**
  * Root Application Component
@@ -24,7 +25,7 @@ export default function App() {
   const { user, loading } = useAuth();
 
   // Defer rendering routes until initial token validation check finishes
-  if (loading) return null;
+  if (loading) return <div className="workout-empty" role="status"><p>Opening your training space…</p></div>;
 
   return (
     <ErrorBoundary>
@@ -49,7 +50,7 @@ export default function App() {
           />
           <Route
             path="/coach"
-            element={user ? <Coach /> : <Navigate to="/login" replace />}
+            element={user ? <Suspense fallback={<div className="workout-empty" role="status">Opening your coach…</div>}><Coach /></Suspense> : <Navigate to="/login" replace />}
           />
           <Route
             path="/progress"
