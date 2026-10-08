@@ -21,7 +21,9 @@ export function createAuthSession(client, { readToken, writeToken }) {
     controller = new AbortController();
     publish({ user: null, loading: true, error: "" });
     try {
-      const { data } = await client.get("/users/me", { signal: controller.signal });
+      // Fail fast: this check gates the first render, so it gets a short timeout
+      // instead of inheriting the 30s global one used by slow AI endpoints.
+      const { data } = await client.get("/users/me", { signal: controller.signal, timeout: 8000 });
       if (request !== generation) return null;
       publish({ user: data, loading: false, error: "" });
       return data;

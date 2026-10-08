@@ -16,6 +16,7 @@ import { lazy, Suspense, useEffect } from "react";
 import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 import { ErrorBoundary } from "./ErrorBoundary";
+import Layout from "./components/Layout";
 const Coach = lazy(() => import("./pages/Coach"));
 
 // Browser titles for every real route; unknown paths fall back to the 404 title.
@@ -39,14 +40,35 @@ function DocumentTitle() {
 }
 
 /**
+ * Session-check placeholder.
+ * Renders the real app shell immediately while the stored token is still being
+ * validated, so a slow backend no longer blanks out the whole page.
+ */
+function SessionPending() {
+  return (
+    <Layout>
+      <div className="workout-empty" role="status">
+        <p>Opening your training space…</p>
+      </div>
+    </Layout>
+  );
+}
+
+/**
  * Root Application Component
  */
 export default function App() {
   const { user, loading, error, refetchUser, logout } = useAuth();
 
-  // Defer rendering routes until initial token validation check finishes
-  if (loading) return <div className="workout-empty" role="status"><p>Opening your training space…</p></div>;
+  // Session check failures are fatal and actionable, so they still take over the screen
   if (error) return <div className="workout-empty"><h1>Let's reconnect.</h1><p role="alert">{error}</p><button type="button" className="fitai-primary-button" onClick={refetchUser}>Try again</button><button type="button" className="fitai-secondary-button" onClick={logout}>Return to login</button></div>;
+
+  // Protected routes need a confirmed session; while it is still loading we show
+  // the shell instead of bouncing the user to /login before the answer arrives.
+  const protectedPage = (element) => (user ? element : loading ? <SessionPending /> : <Navigate to="/login" replace />);
+  // Signed-in visitors to the auth pages are already about to be redirected,
+  // so hold them on the shell rather than flashing the login form at them.
+  const authPage = (element) => (user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : loading ? <SessionPending /> : element);
 
   return (
     <ErrorBoundary>
@@ -54,29 +76,29 @@ export default function App() {
         <DocumentTitle />
         <Routes>
           {/* Public Authentication Routes: signed-in users go to their plan or profile setup */}
-          <Route path="/login" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Login />} />
-          <Route path="/register" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Register />} />
+          <Route path="/login" element={authPage(<Login />)} />
+          <Route path="/register" element={authPage(<Register />)} />
 
           {/* Protected Routes (require authenticated user session) */}
           <Route
             path="/onboarding"
-            element={user ? <Onboarding /> : <Navigate to="/login" replace />}
+            element={protectedPage(<Onboarding />)}
           />
           <Route
             path="/"
-            element={user ? <Dashboard /> : <Navigate to="/login" replace />}
+            element={protectedPage(<Dashboard />)}
           />
           <Route
             path="/log"
-            element={user ? <WorkoutLogger /> : <Navigate to="/login" replace />}
+            element={protectedPage(<WorkoutLogger />)}
           />
           <Route
             path="/coach"
-            element={user ? <Suspense fallback={<div className="workout-empty" role="status">Opening your coach…</div>}><Coach /></Suspense> : <Navigate to="/login" replace />}
+            element={protectedPage(<Suspense fallback={<div className="workout-empty" role="status">Opening your coach…</div>}><Coach /></Suspense>)}
           />
           <Route
             path="/progress"
-            element={user ? <Progress /> : <Navigate to="/login" replace />}
+            element={protectedPage(<Progress />)}
           />
 
           {/* 404 Catch-All Route */}
