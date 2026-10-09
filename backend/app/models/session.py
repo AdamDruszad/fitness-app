@@ -5,7 +5,7 @@ Stores logged workout days, user notes, and sets/reps performance data.
 """
 
 import uuid
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Date
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Date, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -33,6 +33,14 @@ class WorkoutSession(Base):
     session_date = Column(Date)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    occurrence_id = Column(UUID(as_uuid=True), nullable=True)
+    completion_hash = Column(String(64), nullable=True)
+    status = Column(String, nullable=False, default="legacy", server_default="legacy")
+    revision = Column(Integer, nullable=False, default=1, server_default="1")
+    day_id = Column(String, nullable=True)
+    workout_snapshot = Column(JSONB, nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    __table_args__ = (UniqueConstraint("user_id", "occurrence_id", name="uq_session_occurrence"),)
 
     # Eagerly load exercise_logs with selectin so Pydantic's from_attributes can serialize
     # logs within session responses without additional N+1 queries.
@@ -60,7 +68,15 @@ class ExerciseLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id = Column(UUID(as_uuid=True), ForeignKey("workout_sessions.id"), nullable=False)
-    exercise_name = Column(String, nullable=False)
-    sets_data = Column(JSONB, nullable=False)
+    # The initial production migration allowed null legacy fields. Keep those
+    # records intact; new writes require complete values through request schemas.
+    exercise_name = Column(String, nullable=True)
+    sets_data = Column(JSONB, nullable=True)
+    exercise_id = Column(String, nullable=True, index=True)
+    slot_id = Column(String, nullable=True)
+    measurement = Column(String, nullable=False, default="reps", server_default="reps")
+    load_basis = Column(String, nullable=False, default="unspecified", server_default="unspecified")
+    target_data = Column(JSONB, nullable=True)
+    notes = Column(Text, nullable=True)
 
     session = relationship("WorkoutSession", back_populates="exercise_logs")

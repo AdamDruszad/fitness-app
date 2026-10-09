@@ -36,7 +36,7 @@ Built with a **FastAPI** backend and a **React 19 + Vite** frontend, FitAI empow
 ## ✨ Features
 
 ### 🤖 AI Workout Plan Generation
-- Automatically generates custom multi-week periodized programs tailored to:
+- Generates routines with an intended duration (not week-specific periodization), tailored to:
   - Fitness goals (Muscle Gain, Fat Loss, Strength, General Fitness)
   - Experience level (Beginner, Intermediate, Advanced)
   - Weekly schedule (2 to 6 days/week)
@@ -49,25 +49,30 @@ Built with a **FastAPI** backend and a **React 19 + Vite** frontend, FitAI empow
 - The coach has real-time context of the user's active workout plan, biometric stats, and recent workout session logs.
 - Rich text and Markdown support with formatted tables, lists, and advice.
 - Persistent conversation history stored in the database.
+- Turn a saved coach response or pasted routine into a structured plan draft. Review/edit prescriptions, then explicitly activate an immutable plan version.
+- Recover earlier messages and previous plan versions; stale proposals cannot silently overwrite newer plans.
 
 ### 🏋️ Interactive Workout Logger
-- Dynamic per-day workout routine loading from the active plan.
-- Set-by-set logging with precise weights (kg) and repetition counts.
-- Add or remove sets dynamically with smooth auto-scroll.
-- Batch saving with `Promise.allSettled` to guarantee partial successes are not lost.
-- Input validation with automatic `NaN` filtering to ensure database consistency.
+- Snapshot-based workouts with account-scoped IndexedDB drafts and reload/navigation recovery.
+- Separate targets and completed actual sets, with previous comparable performance alongside the inputs.
+- Metric load/repetition logging and distinct duration-based sets in seconds.
+- Atomic server completion with persistent idempotency, payload-conflict handling, and truthful local/pending/server save states.
+- Multi-tab draft conflict detection and version-checked corrections to saved results.
 
 ### 📈 Progress Tracking & Progressive Overload
-- Total volume KPIs: Total sessions, sessions this week, and total exercises completed.
-- Searchable exercise database with personal bests (heaviest weight lifted, total repetitions, total sets).
-- Drill-down drawer showing chronological performance history for any individual movement.
-- AI-driven **Progressive Overload Suggestions** analyzing past sessions to recommend optimal weight and rep increments.
+- Completed-workout counts, optional weekly session goals, paginated full history, and JSON export.
+- Exercise-specific actual results with explicit history coverage and separate equipment/load variants.
+- Optional deterministic double-progression targets with source performance, configured load increments, and explanations.
+- Existing AI training ideas remain available on demand. Legacy records remain readable with unverified completion status.
 
 ### 🎨 Design & Experience
 - Sleek dark and light theme toggle with persistent preferences in `localStorage`.
 - Ambient animated grid, blurred glow gradients, and Tabler icons.
 - Fully responsive layout designed for mobile devices and desktop screens.
 - Top-level `ErrorBoundary` protecting against unexpected client-side crashes.
+- Installable home-screen app with manifest/icons and explicit update handling. Opening the app still requires a connection; installation does not imply full offline support.
+
+See [Training continuity: workflows, migration, verification, and platform boundaries](docs/training-continuity.md) before deploying this release. Apply `alembic upgrade head` before deploying the new frontend.
 
 ---
 

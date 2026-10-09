@@ -4,9 +4,15 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import client from '../api/client';
 import { IconFlame, IconBarbell, IconChevronRight, IconCalendar, IconPlayerPlayFilled, IconArrowUpRight } from '@tabler/icons-react';
-import { getNextTrainingDay, isWithinLastSevenDays } from '../utils/workout';
+import { getNextTrainingDay } from '../utils/workout';
+import { loadDraft } from '../utils/drafts';
+import { useAuth } from '../hooks/useAuth';
+import InstallHelp from '../components/InstallHelp';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [draft, setDraft] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [plan, setPlan] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +23,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
+    loadDraft(user.id).then(record => { if (!controller.signal.aborted) setDraft(record.draft); }).catch(() => {});
+    client.get('/sessions/summary', { signal: controller.signal }).then(r => { if (!controller.signal.aborted) setSummary(r.data); }).catch(() => {});
     setLoading(true);
     setSessionsLoading(true);
     setError('');
@@ -34,17 +42,20 @@ export default function Dashboard() {
       .catch(() => { if (!controller.signal.aborted) setSessionsError('Could not load recent sessions.'); })
       .finally(() => { if (!controller.signal.aborted) setSessionsLoading(false); });
     return () => controller.abort();
-  }, [reload]);
+  }, [reload, user.id]);
 
   const days = plan?.plan_data?.days || [];
   const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const nextDay = getNextTrainingDay(days);
   const isToday = nextDay?.day === todayName;
-  const recentCount = sessionsLoading || sessionsError ? '—' : sessions.length;
-  const weekCount = sessionsLoading || sessionsError ? '—' : sessions.filter(session => isWithinLastSevenDays(session.session_date)).length;
+  const completed = sessions.filter(s => s.status === 'completed');
+  const recentCount = sessionsLoading || sessionsError ? '—' : completed.length;
+  const weekCount = summary?.week_completed ?? '—';
 
   return <Layout contentClassName="dashboard-content">
     <PageHeading eyebrow="Your training space" title="Your plan" description="One session at a time. Make today count." />
+    <div className="continuity-actions"><Link className="text-link" to="/coach">Improve my existing routine</Link><Link className="text-link" to="/plans/history">Plan history</Link>{plan && <span>{plan.plan_data.title} · Version {plan.version}</span>}</div>
+    {draft && <section className="continuity-card"><h2>Workout in progress · {draft.day.day}</h2><p>Plan version {draft.version} · {draft.pending ? 'Waiting to sync' : 'Saved on this device'}</p><Link className="fitai-primary-button" to="/log">Resume workout</Link></section>}
     {error ? <div className="workout-empty"><p role="alert">{error}</p><button className="fitai-secondary-button" type="button" onClick={() => setReload(value => value + 1)}>Try again</button></div>
       : loading ? <div className="workout-empty" role="status"><IconBarbell size={32} aria-hidden="true" /><p>Loading your plan…</p></div>
       : !nextDay ? <div className="dashboard-empty"><IconBarbell size={38} aria-hidden="true" /><h2>Your next chapter starts here.</h2><p>Create a plan around your goals, equipment and schedule.</p><Link to="/onboarding" className="fitai-primary-button">Create your plan<IconArrowUpRight size={17} aria-hidden="true" /></Link></div>
@@ -68,7 +79,7 @@ export default function Dashboard() {
         <aside className="dashboard-secondary" aria-label="Training activity">
           <section className="training-overview" aria-labelledby="overview-heading">
             <div className="section-heading"><h2 id="overview-heading">At a glance</h2><IconChartMark aria-hidden="true" /></div>
-            <div className="overview-stats"><div><strong>{plan?.plan_data?.weeks || 8}<small>weeks</small></strong><span>Plan length</span></div><div><strong>{weekCount}</strong><span>Last 7 days</span></div></div>
+            <div className="overview-stats"><div><strong>{plan?.plan_data?.weeks || 8}<small>weeks</small></strong><span>Intended length</span></div><div><strong>{weekCount}</strong><span>Completed this week</span></div></div>
             <p>{recentCount} recent sessions loaded</p>
             <Link to="/progress" className="text-link">Explore your progress<IconArrowUpRight size={16} aria-hidden="true" /></Link>
           </section>
@@ -81,6 +92,7 @@ export default function Dashboard() {
           </section>
         </aside>
       </div>}
+    <InstallHelp />
   </Layout>;
 }
 

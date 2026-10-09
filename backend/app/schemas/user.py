@@ -58,6 +58,7 @@ class UserProfile(BaseModel):
     goal: Optional[Literal["muscle_gain", "fat_loss", "strength", "general"]] = None
     level: Optional[Literal["beginner", "intermediate", "advanced"]] = None
     days_per_week: Optional[int] = Field(None, ge=1, le=7, description="Available workout days per week")
+    weekly_session_goal: Optional[int] = Field(None, ge=1, le=14)
     equipment: Optional[Literal["gym", "home", "none"]] = None
     injuries: Optional[str] = Field(None, max_length=2000, description="Notes on past/current injuries or movement restrictions")
 
@@ -74,6 +75,7 @@ class UserResponse(BaseModel):
     goal: Optional[str] = None
     level: Optional[str] = None
     days_per_week: Optional[int] = None
+    weekly_session_goal: Optional[int] = None
     equipment: Optional[str] = None
     injuries: Optional[str] = None
 
