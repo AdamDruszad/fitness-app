@@ -74,6 +74,11 @@ def reset_cache() -> None:
         _suggestion_locks.clear()
 
 
+def invalidate_cache(user_id) -> None:
+    with _cache_guard:
+        _suggestion_cache.pop(str(user_id), None)
+
+
 @router.get("/exercise/{exercise_name}", status_code=status.HTTP_200_OK)
 def get_exercise(
     exercise_name: str,

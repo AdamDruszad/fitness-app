@@ -7,8 +7,10 @@ and real-time streaming responses via Server-Sent Events (SSE).
 
 import json
 import logging
+import uuid
 from typing import List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
+from sqlalchemy import or_, and_
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -24,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/", response_model=List[ChatMessageResponse], status_code=status.HTTP_200_OK)
 def prev_chat_msgs(
+    before: uuid.UUID | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -37,10 +40,15 @@ def prev_chat_msgs(
     Returns:
         List[ChatMessageResponse]: Chronologically sorted chat messages.
     """
+    query = db.query(ChatMessage).filter(ChatMessage.user_id == current_user.id)
+    if before:
+        cursor = query.filter(ChatMessage.id == before).first()
+        if not cursor:
+            raise HTTPException(404, "Message not found")
+        query = query.filter(or_(ChatMessage.created_at < cursor.created_at,
+            and_(ChatMessage.created_at == cursor.created_at, ChatMessage.id < cursor.id)))
     history = (
-        db.query(ChatMessage)
-        .filter(ChatMessage.user_id == current_user.id)
-        .order_by(ChatMessage.created_at.desc())
+        query.order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
         .limit(50)
         .all()
     )
@@ -107,6 +115,6 @@ def message(
             payload = {"message": "Your coach could not finish this response. Please try again."}
             yield f"event: error\ndata: {json.dumps(payload)}\n\n"
             return
-        yield "event: done\ndata: {}\n\n"
+        yield f"event: done\ndata: {json.dumps({'id': str(response_msg.id), 'user_id': str(msg.id)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})

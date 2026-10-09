@@ -41,6 +41,7 @@ class User(Base):
     goal = Column(String, nullable=True)
     level = Column(String, nullable=True)
     days_per_week = Column(Integer, nullable=True)
+    weekly_session_goal = Column(Integer, nullable=True)
     equipment = Column(String, nullable=True)
     injuries = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

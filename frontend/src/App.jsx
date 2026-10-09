@@ -15,6 +15,9 @@ import WorkoutLogger from "./pages/WorkoutLogger";
 import { lazy, Suspense, useEffect } from "react";
 import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
+import PlanReview from "./pages/PlanReview";
+import PlanHistory from "./pages/PlanHistory";
+import SessionDetail from "./pages/SessionDetail";
 import { ErrorBoundary } from "./ErrorBoundary";
 const Coach = lazy(() => import("./pages/Coach"));
 
@@ -33,7 +36,7 @@ const PAGE_TITLES = {
 function DocumentTitle() {
   const { pathname } = useLocation();
   useEffect(() => {
-    document.title = `FitAI — ${PAGE_TITLES[pathname] || "Page not found"}`;
+    document.title = `FitAI — ${PAGE_TITLES[pathname] || (pathname.startsWith("/plans/") ? "Your routine" : pathname.startsWith("/sessions/") ? "Saved session" : "Page not found")}`;
   }, [pathname]);
   return null;
 }
@@ -43,6 +46,7 @@ function DocumentTitle() {
  */
 export default function App() {
   const { user, loading, error, refetchUser, logout } = useAuth();
+  const protectedPage = page => user ? <div key={user.id}>{page}</div> : <Navigate to="/login" replace />;
 
   // Defer rendering routes until initial token validation check finishes
   if (loading) return <div className="workout-empty" role="status"><p>Opening your training space…</p></div>;
@@ -53,6 +57,9 @@ export default function App() {
       <BrowserRouter>
         <DocumentTitle />
         <Routes>
+          <Route path="/plans/proposals/:id" element={protectedPage(<PlanReview />)} />
+          <Route path="/plans/history" element={protectedPage(<PlanHistory />)} />
+          <Route path="/sessions/:id" element={protectedPage(<SessionDetail />)} />
           {/* Public Authentication Routes: signed-in users go to their plan or profile setup */}
           <Route path="/login" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Login />} />
           <Route path="/register" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Register />} />

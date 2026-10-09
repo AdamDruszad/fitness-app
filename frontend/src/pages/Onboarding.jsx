@@ -4,6 +4,7 @@ import { IconArrowLeft, IconArrowRight, IconCheck, IconLoader2 } from "@tabler/i
 import client from "../api/client";
 import Layout from "../components/Layout";
 import PageHeading from "../components/PageHeading";
+import InstallHelp from "../components/InstallHelp";
 import { apiError } from "../utils/apiError";
 import { onboardingFormFromProfile, validateOnboardingStep } from "../utils/onboarding";
 
@@ -114,7 +115,7 @@ export default function Onboarding() {
     requestAnimationFrame(() => headingRef.current?.focus());
   }
 
-  async function handleSubmit(event) {
+  async function handleSubmit(event, preferencesOnly = false) {
     event.preventDefault();
     if (submissionInFlight.current || initLoading || initError) return;
     if (step < STEPS.length - 1) {
@@ -137,9 +138,12 @@ export default function Onboarding() {
       });
       preferencesSaved = true;
       setHasSavedPreferences(true);
+      if (preferencesOnly) { navigate("/"); return; }
       setPhase("generating");
-      await client.post("/plans/generate", undefined, { timeout: 120000 });
-      navigate("/");
+      let base = null;
+      try { base = (await client.get("/plans/current")).data; } catch (e) { if (e.response?.status !== 404) throw e; }
+      const { data } = await client.post("/plans/proposals", { request_id: crypto.randomUUID(), base_plan_id: base?.id || null, instructions: "Create a complete routine using my saved preferences. Preserve useful exercises from my current plan where appropriate." }, { timeout: 120000 });
+      navigate(`/plans/proposals/${data.id}`);
     } catch (failure) {
       const detail = apiError(failure, "Please try again.");
       setError(preferencesSaved
@@ -159,6 +163,8 @@ export default function Onboarding() {
     <Layout>
       <Link to="/" className="workout-back"><IconArrowLeft size={16} aria-hidden="true" /> Back to your plan</Link>
       <PageHeading eyebrow="Make it yours" title={hasSavedPreferences ? "Training preferences" : "Build your training plan"} description="A plan that fits your goals, schedule, and equipment." />
+      <Link to="/coach" className="text-link">Already have a routine? Improve it with Coach</Link>
+      <InstallHelp />
 
       {initLoading ? (
         <div role="status" className="flex items-center justify-center gap-3 py-20 text-sm text-text-muted"><IconLoader2 className="animate-spin" size={20} aria-hidden="true" /> Loading your preferences...</div>
@@ -211,11 +217,12 @@ export default function Onboarding() {
                   <dl className="grid grid-cols-2 gap-4 border-y border-border-subtle py-5 my-5 text-sm">
                     {[["Goal", selectedLabel(GOALS, form.goal)], ["Experience", selectedLabel(LEVELS, form.level)], ["Schedule", `${form.days_per_week} days per week`], ["Equipment", selectedLabel(EQUIPMENT, form.equipment)], ["Age", `${form.age} years`], ["Weight", `${form.weight_kg} kg`]].map(([label, value]) => <div key={label}><dt className="text-xs text-text-muted mb-1">{label}</dt><dd className="text-text-main">{value}</dd></div>)}
                   </dl>
-                  <p className="text-sm text-text-muted leading-relaxed">{hasSavedPreferences ? "Generating saves these preferences and creates a new plan, replacing your current active plan. Your logged workouts stay in your history." : "Generating saves these preferences and creates your personalized training plan."}</p>
+                  <p className="text-sm text-text-muted leading-relaxed">Save your preferences alone, or create a plan draft to review. Your active routine changes only when you apply the reviewed draft.</p>
                 </div>
               )}
               <div className="flex flex-wrap gap-3 justify-between mt-7">
                 {step > 0 && <button type="button" onClick={() => goToStep(step - 1)} className="fitai-secondary-button"><IconArrowLeft size={16} aria-hidden="true" /> Back</button>}
+                {step === 5 && <button type="button" className="fitai-secondary-button" disabled={loading} onClick={e => handleSubmit(e, true)}>Save preferences only</button>}
                 <button type="submit" className="fitai-primary-button ml-auto" disabled={loading}>
                   {loading && <IconLoader2 className="animate-spin" size={16} aria-hidden="true" />}
                   {phase === "saving" ? "Saving preferences..." : phase === "generating" ? "Generating plan..." : step < STEPS.length - 1 ? "Continue" : hasSavedPreferences ? "Generate new plan" : "Generate my plan"}

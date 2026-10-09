@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+.continuity-card { border: 1px solid var(--color-border-subtle); border-radius: 14px; padding: 20px; margin-block: 16px; background: var(--color-surface); }
+.continuity-card h2, .continuity-card h3 { font-weight: 600; margin-block: 12px; }
+.continuity-card label, .plan-editor label { display: flex; flex-direction: column; gap: 8px; margin-block: 12px; font-size: 14px; }
+.continuity-card input, .continuity-card textarea, .continuity-card select, .plan-editor input { background: var(--color-input); color: var(--color-text-main); border: 1px solid var(--color-border-subtle); border-radius: 8px; padding: 12px; font-size: 16px; min-width: 0; width: 100%; }
+.continuity-card textarea { min-height: 100px; }
+.continuity-card summary { cursor: pointer; min-height: 44px; font-weight: 600; }
+.continuity-actions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 20px; }
+.continuity-error { color: var(--color-danger-text); padding: 16px; border: 1px solid currentColor; border-radius: 10px; margin-block: 16px; }
+.review-grid { display: grid; gap: 24px; grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr); align-items: start; }
+.plan-changes li { margin-block: 16px; font-size: 14px; }
+.plan-changes p { color: var(--color-text-muted); margin-top: 4px; }
+.prescription-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.prescription-editor { border-top: 1px solid var(--color-border-subtle); padding-block: 16px; }
+.plan-editor { min-width: 0; }
+.actual-set, .actual-set-labels { display: grid; grid-template-columns: 28px minmax(65px, 1fr) minmax(65px, 1fr) 64px; align-items: center; gap: 8px; margin-block: 12px; }
+.actual-set input, .session-note input { width: 100%; min-width: 0; font-size: 16px; padding: 12px; color: var(--color-text-main); background: var(--color-input); border: 1px solid var(--color-border-subtle); border-radius: 8px; }
+.actual-set > .text-link { grid-column: 2 / -1; justify-self: end; min-height: 44px; }
+.actual-set-labels { font-size: 13px; color: var(--color-text-muted); }
+.session-note { display: grid; gap: 8px; font-size: 14px; margin-top: 12px; }
+.session-history-link { display: grid; gap: 8px; }
+.session-history-link span { color: var(--color-text-muted); font-size: 14px; }
+.exercise-card + .exercise-card { margin-top: 20px; }
+.plan-editor:disabled { opacity: .8; }
+@media (max-width: 760px) { .review-grid { grid-template-columns: minmax(0, 1fr); } .continuity-card { padding: 16px; } }
+
 @theme {
   --color-base: #16171d;
   --color-surface: rgba(31, 32, 40, .5);
@@ -151,8 +176,9 @@ button:disabled { cursor: not-allowed; }
 .remove-set:disabled { opacity: .3; }
 .add-set { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; background: transparent; border: 0; color: var(--fitai-accent-text); font-size: 12px; cursor: pointer; }
 .workout-savebar { position: sticky; z-index: 10; bottom: 16px; background: var(--fitai-surface-solid); border: 1px solid var(--color-border-subtle); border-radius: 10px; margin-top: 24px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 24px; box-shadow: 0 6px 20px #0002; }
-.workout-savebar p { font-size: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.workout-savebar p > span { display: block; color: var(--color-text-muted); font-size: 10px; width: 100%; }
+.workout-savebar { flex-wrap: wrap; }
+.workout-savebar p { font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.workout-savebar p > span { display: block; color: var(--color-text-muted); font-size: 12px; width: 100%; }
 .fitai-primary-button, .fitai-secondary-button { display: inline-flex; align-items: center; justify-content: center; text-align: center; gap: 12px; min-height: 44px; padding: 12px 20px; font-size: 12px; font-weight: 600; border-radius: 7px; cursor: pointer; text-decoration: none; }
 .fitai-primary-button { border: 1px solid var(--color-brand-strong); background: var(--color-brand-strong); color: white; }
 .fitai-primary-button:hover:not(:disabled) { background: var(--color-brand-strong-hover); border-color: var(--color-brand-strong-hover); }
@@ -174,7 +200,7 @@ button:disabled { cursor: not-allowed; }
   .header-actions { gap: 2px; }
   .fitai-content { width: calc(100% - 40px); padding: 28px 0 112px; }
   .mobile-nav { position: fixed; z-index: 30; bottom: 0; inset-inline: 0; display: flex; justify-content: space-around; background: var(--color-base); border-top: 1px solid var(--color-border-subtle); padding: 10px 8px max(10px, env(safe-area-inset-bottom)); }
-  .mobile-nav a { display: flex; align-items: center; flex-direction: column; gap: 5px; text-decoration: none; color: var(--color-text-muted); font-size: 10px; padding: 4px 16px; min-height: 44px; }
+  .mobile-nav a { display: flex; align-items: center; flex-direction: column; gap: 5px; text-decoration: none; color: var(--color-text-muted); font-size: 12px; padding: 4px 16px; min-height: 44px; }
   .mobile-nav a.is-active { color: var(--fitai-accent-text); }
   .page-heading h1 { font-size: 28px; }
   .workout-days button { min-width: 90px; padding: 10px 12px; font-size: 12px; }
@@ -194,9 +220,9 @@ button:disabled { cursor: not-allowed; }
   .set-grid input { padding-inline: 10px; }
   .remove-set { min-width: 36px; }
   .workout-savebar { bottom: calc(82px + env(safe-area-inset-bottom)); padding: 14px; gap: 12px; }
-  .workout-savebar p { font-size: 10px; }
-  .workout-savebar p > span { font-size: 9px; }
-  .workout-savebar .fitai-primary-button, .workout-savebar .fitai-secondary-button { padding: 11px 12px; font-size: 11px; flex-shrink: 0; }
+  .workout-savebar p { font-size: 14px; }
+  .workout-savebar p > span { font-size: 12px; }
+  .workout-savebar .fitai-primary-button, .workout-savebar .fitai-secondary-button { padding: 12px; font-size: 14px; flex-shrink: 0; }
 }
 @media (max-width: 370px) {
   .fitai-content { width: calc(100% - 32px); }

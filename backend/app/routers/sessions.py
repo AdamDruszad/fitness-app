@@ -21,6 +21,8 @@ from app.schemas.session import (
 )
 
 router = APIRouter()
+from app.routers.training import router as training_router
+router.include_router(training_router)
 
 
 @router.post("/", response_model=SessionResponse, status_code=status.HTTP_200_OK)
@@ -141,6 +143,8 @@ def add_log(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Session not found"
         )
+    if session.status == "completed":
+        raise HTTPException(409, "Use the correction endpoint to change a completed workout")
 
     # Convert Pydantic set models to JSON-serializable dictionaries
     sets_list = [s.model_dump() for s in body.sets_data]

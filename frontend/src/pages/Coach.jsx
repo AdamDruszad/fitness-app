@@ -14,7 +14,8 @@ import { IconSend2, IconRobot, IconUser, IconLoader2 } from "@tabler/icons-react
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeading from "../components/PageHeading";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { apiError } from "../utils/plans";
 import { useAuth } from "../hooks/useAuth";
 import { readToken } from "../api/token";
 
@@ -24,6 +25,13 @@ const markdownComponents = {
 
 export default function Coach() {
   const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [proposals, setProposals] = useState([]);
+  const [proposing, setProposing] = useState(false);
+  const [more, setMore] = useState(true);
+  const [routine, setRoutine] = useState("");
+  const [keep, setKeep] = useState("");
+  const proposalRequest = useRef(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -51,15 +59,18 @@ export default function Coach() {
    */
   useEffect(() => {
     const controller = new AbortController();
+    client.get("/plans/proposals", { signal: controller.signal }).then(r => setProposals(r.data)).catch(() => {});
     client
       .get("/chat/", { signal: controller.signal })
       .then((r) => {
         if (controller.signal.aborted) return;
+        setMore(r.data.length === 50);
         setMessages(
           r.data.map((m) => ({
             role: m.role,
             content: m.content,
             id: m.id,
+            persisted: true,
           }))
         );
       })
@@ -176,6 +187,7 @@ export default function Coach() {
           }
           if (pendingEvent === "done") {
             receivedDone = true;
+            setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, id: chunk.id, persisted: true } : m.id === userMsg.id ? { ...m, id: chunk.user_id, persisted: true } : m));
             pendingEvent = "message";
             continue;
           }
@@ -194,6 +206,8 @@ export default function Coach() {
       // user must see, not a silently truncated answer.
       if (serverError || !receivedDone) {
         setError(serverError || "The connection closed before your coach finished. Please try again.");
+        setInput(text);
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, incomplete: true } : m));
         setMessages((prev) => prev.filter((message) =>
           message.id !== assistantMsg.id || message.content
         ));
@@ -201,6 +215,8 @@ export default function Coach() {
     } catch (err) {
       if (controller.signal.aborted) return;
       setError(err.message || "Something went wrong");
+      setInput(text);
+      setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, incomplete: true } : m));
       // Remove empty assistant placeholder if failed before stream started
       setMessages((prev) => prev.filter((message) =>
         message.id !== assistantMsg.id || message.content
@@ -217,11 +233,37 @@ export default function Coach() {
     }
   }
 
+  async function earlier() {
+    try {
+      followMessagesRef.current = false;
+      const container = bottomRef.current?.parentElement;
+      const height = container?.scrollHeight || 0;
+      const { data } = await client.get("/chat/", { params: { before: messages.find(m => m.persisted)?.id } });
+      setMessages(prev => [...data.map(m => ({ ...m, persisted: true })), ...prev]); setMore(data.length === 50);
+      requestAnimationFrame(() => { if (container) container.scrollTop += container.scrollHeight - height; });
+    } catch (e) { setError(apiError(e)); }
+  }
+  async function propose(messageId) {
+    if (proposing) return;
+    setProposing(true); setError("");
+    try {
+      let active = null;
+      try { active = (await client.get("/plans/current")).data; } catch (e) { if (e.response?.status !== 404) throw e; }
+      const content = { base_plan_id: active?.id || null, source_message_ids: messageId ? [messageId] : [], instructions: routine, keep_exercises: keep.split(",").map(v => v.trim()).filter(Boolean) };
+      const hash = JSON.stringify(content);
+      if (proposalRequest.current?.hash !== hash) proposalRequest.current = { hash, id: crypto.randomUUID() };
+      const { data } = await client.post("/plans/proposals", { ...content, request_id: proposalRequest.current.id });
+      navigate(`/plans/proposals/${data.id}`);
+    } catch (e) { setError(apiError(e)); } finally { setProposing(false); }
+  }
+
   return (
     <Layout contentClassName="coach-content">
       <div className="coach-layout">
         {/* Header */}
         <PageHeading eyebrow="A little guidance goes a long way" title="AI Coach" description="Talk through your training, technique and recovery." />
+        <details className="continuity-card"><summary>Improve my existing routine</summary><label>Paste your routine or describe improvements<textarea value={routine} onChange={e => setRoutine(e.target.value)} maxLength={6000} /></label><label>Exercises to keep (comma separated)<input value={keep} onChange={e => setKeep(e.target.value)} /></label><button className="fitai-secondary-button" disabled={proposing || !routine.trim()} onClick={() => propose()}>{proposing ? "Preparing draft…" : "Create plan draft"}</button></details>
+        {proposals.filter(p => p.status !== "applied").slice(0, 3).map(p => <Link className="text-link" key={p.id} to={`/plans/proposals/${p.id}`}>Plan draft · {p.plan_data?.title || p.status} · Review</Link>)}
 
         {/* Scrollable Conversation History Container */}
         <div
@@ -235,6 +277,7 @@ export default function Coach() {
           }}
           className="coach-conversation"
         >
+          {more && messages.length > 0 && <button className="fitai-secondary-button" disabled={streaming} onClick={earlier}>Load earlier messages</button>}
           {loading ? (
             <div className="flex-1 flex items-center justify-center">
               <IconLoader2
@@ -298,6 +341,8 @@ export default function Coach() {
                   }`}
                 >
                   {msg.role === "user" ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>}
+                  {msg.incomplete && <p className="text-danger-text">Incomplete response — retry your message.</p>}
+                  {msg.role === "assistant" && msg.persisted && <button className="text-link" disabled={proposing || streaming} onClick={() => propose(msg.id)}>Turn this into a plan</button>}
                   {msg.role === "assistant" &&
                     streaming &&
                     msg === messages[messages.length - 1] && (
@@ -321,7 +366,7 @@ export default function Coach() {
           {loading ? "Loading chat history" : streaming ? "Your coach is replying" : "Coach ready"}
         </p>
 
-        <p className="coach-note">Chat suggestions don't change your saved plan. <Link to="/onboarding">Update your training preferences</Link> to create a new one.</p>
+        <p className="coach-note">Chat advice becomes your training plan only when you review and save a plan draft. <Link to="/plans/history">Plan history</Link></p>
 
         {/* Message Input Form */}
         <form
