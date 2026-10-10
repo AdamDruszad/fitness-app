@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fitai-test-api",
+      "runtimeExecutable": "C:\\Users\\adamb\\Documents\\GitHub\\fitness-app\\backend\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "tests.browser_app:app", "--app-dir", "backend", "--host", "127.0.0.1", "--port", "8011"],
+      "port": 8011
+    },
+    {
+      "name": "fitai-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set VITE_API_URL=http://127.0.0.1:8011&& cd frontend && npx vite --host 127.0.0.1 --port 5187 --strictPort"],
+      "port": 5187,
+      "url": "http://127.0.0.1:5187"
+    }
+  ]
+}
