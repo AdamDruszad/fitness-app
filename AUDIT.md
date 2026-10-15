@@ -1,5 +1,9 @@
 # FitAI frontend audit and redesign
 
+> Historical audit of the pre-merge redesign. The later merge disconnected its CSS
+> and reverted parts of its markup. See [the recovery audit](frontend/docs/REDESIGN_RECOVERY.md)
+> for the current repair and repository-owned browser checks.
+
 **Scope:** the React frontend in `frontend/` (every route, component and stylesheet), plus the
 backend only as far as it shapes what the UI shows. The backend was not changed.
 **Baseline:** branch `Repaired-components-an-design` at `8692cdb`; redesign on branch `redesign`.

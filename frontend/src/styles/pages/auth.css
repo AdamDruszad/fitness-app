@@ -40,7 +40,7 @@
 .auth-promise .num { color: var(--accent-text); font-size: var(--fs-lg); min-width: 2.2ch; }
 .auth-caption { color: var(--text-2); font-size: var(--fs-md); position: relative; z-index: 1; }
 
-.auth-main { display: flex; flex-direction: column; padding: var(--s-6) var(--gutter) var(--s-10); }
+.auth-main { display: flex; flex-direction: column; padding: calc(var(--s-6) + env(safe-area-inset-top)) var(--gutter) calc(var(--s-10) + env(safe-area-inset-bottom)); }
 .auth-topbar { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); }
 .auth-mobile-brand { display: none; margin-right: auto; }
 .auth-card { width: min(100%, 400px); margin: auto; display: grid; gap: var(--s-5); padding-block: var(--s-8); }
@@ -54,6 +54,6 @@
   .auth { grid-template-columns: minmax(0, 1fr); }
   .auth-panel { display: none; }
   .auth-mobile-brand { display: inline-flex; }
-  .auth-main { padding-top: var(--s-3); }
+  .auth-main { padding-top: calc(var(--s-3) + env(safe-area-inset-top)); }
   .auth-card { margin-top: var(--s-8); padding-block: var(--s-4); }
 }

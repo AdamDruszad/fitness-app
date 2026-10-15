@@ -2,13 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <meta name="theme-color" content="#16171d" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="FitAI — Your personal AI-powered fitness coach. Get custom workout plans, log sessions, track progress, and chat with your AI coach." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>FitAI — AI Fitness Coach</title>
     <meta name="description" content="FitAI — Your personal AI-powered fitness coach. Get custom workout plans, log sessions, track progress, and chat with your AI coach." />
     <meta name="color-scheme" content="dark light" />
@@ -30,7 +24,7 @@
       // Apply the saved or system theme before first paint (mirrors ThemeContext).
       try {
         var saved = localStorage.getItem("theme");
-        var light = saved ? saved === "light" : matchMedia("(prefers-color-scheme: light)").matches;
+        var light = saved === "light" || (saved !== "dark" && matchMedia("(prefers-color-scheme: light)").matches);
         if (light) {
           document.documentElement.classList.add("light");
           document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f2eb");

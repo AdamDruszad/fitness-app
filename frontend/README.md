@@ -1,16 +1,64 @@
-# React + Vite
+# FitAI frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19, Vite 8 and Tailwind 4. The UI uses the **Iron & chalk** redesign: Archivo
+variable type, warm neutrals, terracotta actions, compact workout rows and a shared
+responsive shell.
 
-Currently, two official plugins are available:
+## Develop
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```sh
+npm ci
+npm run dev
+```
 
-## React Compiler
+The API defaults to `http://localhost:8000`. Set `VITE_API_URL` for your backend.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Verify before merging
 
-## Expanding the Oxlint configuration
+```sh
+npm run lint
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Browser tests build and serve the actual bundle on port 5204. They use synthetic,
+intercepted API responses; no backend, credentials or AI service is needed.
+`PLAYWRIGHT_CHANNEL=msedge` can use an installed Edge browser instead of downloading
+Chromium. On PowerShell:
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'msedge'
+npm run test:e2e
+```
+
+The suite checks all routes at 320, 390, 768 and 1440 pixels, dark/light themes,
+computed CSS and font loading, navigation, overflow with long names, workout draft
+recovery and completion, plan activation, chat and the production offline fallback.
+Screenshots are in `test-results/`; open the report with `npx playwright show-report`.
+The GitHub workflow runs these checks for pull requests and uploads the results.
+
+## Styling contract
+
+`src/index.css` is the stylesheet entry point. It must import:
+
+1. Tailwind's reset/utilities and the self-hosted Archivo font.
+2. `styles/tokens.css` — colours, type, spacing and theme values.
+3. `styles/base.css`, `components.css`, `layout.css` — defaults, controls and shell.
+4. Every stylesheet in `styles/pages/` — layouts paired with their React pages.
+
+Compose `Layout`, `PageHeading`, `Notice`, `LoadingLine`, `BackLink` and the shared
+`btn`, `field`, `ledger`, `card` and `disclosure` classes. Keep page markup and page
+CSS together when resolving merges. The retired `continuity-*`, `fitai-*-button`
+and `workout-savebar` styles are no longer part of this design system.
+
+## Vercel
+
+Use **Root Directory: `frontend`**, **Framework: Vite**, **Build: `npm run build`**,
+**Output: `dist`**, with `VITE_API_URL` set for the deployed backend.
+`frontend/vercel.json` supplies the SPA fallback for direct links and refreshes on
+routes such as `/coach` and `/plans/history`.
+
+See [the recovery audit](docs/REDESIGN_RECOVERY.md) for the merge failure, repair
+scope and verification details.

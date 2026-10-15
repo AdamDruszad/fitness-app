@@ -105,7 +105,7 @@ export default function App() {
             />
             <Route
               path="/coach"
-              element={user ? <Suspense fallback={<div className="workout-empty" role="status">Opening your coach…</div>}><Coach /></Suspense> : <Navigate to="/login" replace />}
+              element={protectedPage(<Suspense fallback={<StateScreen busy>Opening your coach…</StateScreen>}><Coach /></Suspense>)}
             />
             <Route
               path="/progress"

@@ -29,7 +29,6 @@
   cursor: pointer;
   transition: border-color var(--t-fast), background-color var(--t-fast), transform var(--t-fast) var(--ease-out);
 }
-.choice:hover:not(:disabled) { border-color: var(--text-3); }
 .choice:active:not(:disabled) { transform: translateY(1px); }
 .choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .choice-mark { position: absolute; top: var(--s-4); right: var(--s-4); display: grid; place-items: center; width: 22px; height: 22px; border: 1.5px solid var(--line-strong); border-radius: 50%; }
@@ -54,7 +53,6 @@
   transition: border-color var(--t-fast), background-color var(--t-fast), color var(--t-fast);
 }
 .day-count .num { font-size: 2.25rem; line-height: 1.1; color: var(--text); }
-.day-count:hover:not(:disabled) { border-color: var(--text-3); }
 .day-count[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
 .day-count[aria-pressed="true"] .num { color: var(--accent-text); }
 
@@ -71,6 +69,10 @@
 .onboarding-next { margin-left: auto; min-width: 160px; }
 .onboarding-status:empty { display: none; }
 .onboarding .install-help { margin-top: var(--s-10); }
+
+@media (hover: hover) and (pointer: fine) {
+  .choice:hover:not(:disabled), .day-count:hover:not(:disabled) { border-color: var(--text-3); }
+}
 
 @media (max-width: 899px) {
   .onboarding-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }

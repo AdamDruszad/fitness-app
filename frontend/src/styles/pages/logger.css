@@ -18,7 +18,6 @@
   cursor: pointer;
   transition: border-color var(--t-fast), background-color var(--t-fast), transform var(--t-fast) var(--ease-out);
 }
-.day-option:hover:not(:disabled) { border-color: var(--accent-line); background: var(--ink-2); }
 .day-option:active:not(:disabled) { transform: translateY(1px); }
 .day-option:disabled { opacity: 0.5; }
 .day-option.is-selected { border-color: var(--accent); background-image: linear-gradient(115deg, var(--accent-soft), transparent 70%), var(--knurl); box-shadow: var(--shadow-2); }
@@ -78,14 +77,12 @@
   cursor: pointer;
   transition: background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--ease-out);
 }
-.set-done:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
 .set-done:active:not(:disabled) { transform: scale(0.94); }
 .set-done[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
 .set-done:disabled { opacity: 0.45; }
 .set-row.is-done .set-number { color: var(--ok); }
 .set-row.is-done .set-input:disabled { opacity: 1; border-color: var(--ok-line); background: var(--ok-soft); }
 .set-remove { color: var(--text-3); }
-.set-remove:hover:not(:disabled) { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
 .add-set { justify-self: start; margin-left: calc(var(--s-2) * -1); }
 .exercise-note { padding-top: var(--s-3); border-top: 1px solid var(--line); }
 
@@ -114,10 +111,26 @@
   .exercise-thumb.exercise-art { width: 72px; }
   .exercise-head { gap: var(--s-3); align-items: flex-start; }
   .exercise-name { font-size: var(--fs-lg); }
-  .set-row { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 46px 40px; gap: 6px; }
-  .set-remove { width: 40px; }
+  .set-row { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 44px 44px; gap: 6px; }
+  .set-done, .set-remove { width: 44px; }
   .finish-bar { flex-wrap: nowrap; }
   .finish-bar .action-bar-text strong { font-size: var(--fs-sm); }
   .finish-bar .action-bar-text span { display: block; font-size: var(--fs-xs); }
   .finish-bar .btn { min-width: 0; flex: none; }
+}
+
+/* Keep the prescription readable instead of squeezing it between the art and tally. */
+@media (max-width: 599px) {
+  .exercise-head { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; }
+  .exercise-thumb.exercise-art { width: 56px; grid-column: 1; grid-row: 1; }
+  .exercise-head-copy { display: contents; }
+  .exercise-name { grid-column: 2; grid-row: 1; }
+  .exercise-dose { grid-column: 1 / -1; grid-row: 2; }
+  .exercise-tally { grid-column: 3; grid-row: 1; align-self: center; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .day-option:hover:not(:disabled) { border-color: var(--accent-line); background: var(--ink-2); }
+  .set-done:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
+  .set-done[aria-pressed="true"]:hover:not(:disabled) { color: var(--on-ok); }
+  .set-remove:hover:not(:disabled) { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
 }

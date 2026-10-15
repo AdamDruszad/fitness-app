@@ -42,7 +42,9 @@
 .version > summary::-webkit-details-marker { display: none; }
 .version > summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-left: var(--s-2); border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2); rotate: 45deg; translate: 0 -2px; transition: rotate var(--t-med) var(--ease-out); }
 .version[open] > summary::after { rotate: 225deg; translate: 0 2px; }
-.version > summary:hover { background: var(--ink-2); }
+@media (hover: hover) and (pointer: fine) {
+  .version > summary:hover { background: var(--ink-2); }
+}
 .version-badge { font-size: var(--fs-2xl); color: var(--accent-text); min-width: 2.4ch; }
 .version-main { display: grid; gap: 2px; flex: 1; min-width: 0; }
 .version-title { font-weight: 700; overflow-wrap: anywhere; }

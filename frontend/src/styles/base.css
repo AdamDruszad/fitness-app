@@ -3,7 +3,8 @@
   html {
     background: var(--ink-0);
     -webkit-text-size-adjust: 100%;
-    scroll-padding-top: calc(var(--header-h) + var(--s-4));
+    scroll-padding-top: calc(var(--header-h) + env(safe-area-inset-top) + var(--s-4));
+    scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--s-4));
   }
 
   body {
@@ -29,7 +30,12 @@
 
   button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
   button { font: inherit; color: inherit; }
+  button, a, summary { touch-action: manipulation; }
+  button, summary, .tab-bar a { user-select: none; -webkit-user-select: none; }
   button:disabled { cursor: not-allowed; }
+
+  /* User-authored plan names and coach output must wrap without widening the shell. */
+  h1, h2, h3, h4, p, button, summary { overflow-wrap: anywhere; }
 
   :focus-visible {
     outline: 2px solid var(--accent-text);
