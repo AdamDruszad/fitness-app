@@ -7,6 +7,14 @@
     scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--s-4));
   }
 
+  /* A sticky action bar (logger finish bar, plan review) stacks above the tab bar. Keep keyboard
+     focus clear of both: measured, the bar reaches up to 228px from the bottom on a 320px phone
+     and 86px on desktop, so focused fields scroll above it instead of sitting underneath. */
+  html:has(.action-bar) { scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 15rem); }
+  @media (min-width: 768px) {
+    html:has(.action-bar) { scroll-padding-bottom: 6.5rem; }
+  }
+
   body {
     margin: 0;
     min-height: 100dvh;
