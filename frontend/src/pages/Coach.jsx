@@ -7,10 +7,10 @@
  * and maintains conversation history across sessions.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import client from "../api/client";
 import Layout from "../components/Layout";
-import { IconSend2, IconRobot, IconUser, IconLoader2 } from "@tabler/icons-react";
+import { IconSend2, IconUser, IconLoader2, IconSparkles, IconFileText, IconChevronRight, IconHistory } from "@tabler/icons-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeading from "../components/PageHeading";
@@ -18,6 +18,10 @@ import { Link, useNavigate } from "react-router";
 import { apiError } from "../utils/plans";
 import { useAuth } from "../hooks/useAuth";
 import { readToken } from "../api/token";
+import { Notice } from "../components/ui";
+
+// The server accepts up to 4000 characters per message (ChatMessageIn).
+const MESSAGE_LIMIT = 4000;
 
 const markdownComponents = {
   table: ({ children }) => <div className="coach-table" role="region" aria-label="Coach table, scroll horizontally for more" tabIndex={0}><table>{children}</table></div>,
@@ -257,148 +261,136 @@ export default function Coach() {
     } catch (e) { setError(apiError(e)); } finally { setProposing(false); }
   }
 
+  // Grow the composer with its content, up to the CSS max-height.
+  useLayoutEffect(() => {
+    const field = inputRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  }, [input]);
+
+  /** Enter sends on keyboard devices; Shift+Enter (and Enter on touch screens) adds a line. */
+  function handleComposerKey(event) {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  }
+
+  const openDrafts = proposals.filter(p => p.status !== "applied").slice(0, 3);
+
   return (
-    <Layout contentClassName="coach-content">
-      <div className="coach-layout">
-        {/* Header */}
-        <PageHeading eyebrow="A little guidance goes a long way" title="AI Coach" description="Talk through your training, technique and recovery." />
-        <details className="continuity-card"><summary>Improve my existing routine</summary><label>Paste your routine or describe improvements<textarea value={routine} onChange={e => setRoutine(e.target.value)} maxLength={6000} /></label><label>Exercises to keep (comma separated)<input value={keep} onChange={e => setKeep(e.target.value)} /></label><button className="fitai-secondary-button" disabled={proposing || !routine.trim()} onClick={() => propose()}>{proposing ? "Preparing draft…" : "Create plan draft"}</button></details>
-        {proposals.filter(p => p.status !== "applied").slice(0, 3).map(p => <Link className="text-link" key={p.id} to={`/plans/proposals/${p.id}`}>Plan draft · {p.plan_data?.title || p.status} · Review</Link>)}
-
-        {/* Scrollable Conversation History Container */}
-        <div
-          role="log"
-          aria-label="Conversation with your coach"
-          aria-live="off"
-          tabIndex={0}
-          onScroll={(event) => {
-            const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
-            followMessagesRef.current = scrollHeight - scrollTop - clientHeight < 80;
-          }}
-          className="coach-conversation"
-        >
-          {more && messages.length > 0 && <button className="fitai-secondary-button" disabled={streaming} onClick={earlier}>Load earlier messages</button>}
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <IconLoader2
-                className="text-brand-accent animate-spin"
-                size={28}
-              aria-hidden="true" />
-            </div>
-          ) : error && messages.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p role="alert" className="text-danger-text text-sm">{error}</p>
-            </div>
-          ) : messages.length === 0 ? (
-            /* Empty State */
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-4">
-              <div className="p-4 bg-brand-accent/10 rounded-full">
-                <IconRobot size={32} className="text-brand-accent/60" aria-hidden="true" />
-              </div>
-              <p className="text-text-muted text-sm max-w-xs">
-                Ask your AI coach about exercises, form tips, recovery, or
-                anything training-related.
-              </p>
-            </div>
-          ) : (
-            /* Rendered Messages */
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`coach-message flex gap-2.5 ${
-                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                }`}
-              >
-                {/* User / Assistant Avatar */}
-                <div
-                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
-                    msg.role === "user"
-                      ? "bg-brand-accent/20"
-                      : "bg-raised border border-border-subtle"
-                  }`}
-                >
-                  {msg.role === "user" ? (
-                    <IconUser
-                      size={14}
-                      className="text-brand-accent"
-                      stroke={2}
-                    aria-hidden="true" />
-                  ) : (
-                    <IconRobot
-                      size={14}
-                      className="text-text-muted"
-                      stroke={2}
-                    aria-hidden="true" />
-                  )}
-                </div>
-
-                {/* Message Bubble (Markdown formatted for coach, raw for user) */}
-                <div
-                  className={`coach-bubble rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
-                    msg.role === "user"
-                      ? "bg-brand-strong text-white rounded-tr-md whitespace-pre-wrap"
-                      : "bg-raised border border-border-subtle text-text-main rounded-tl-md markdown-body"
-                  }`}
-                >
-                  {msg.role === "user" ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>}
-                  {msg.incomplete && <p className="text-danger-text">Incomplete response — retry your message.</p>}
-                  {msg.role === "assistant" && msg.persisted && <button className="text-link" disabled={proposing || streaming} onClick={() => propose(msg.id)}>Turn this into a plan</button>}
-                  {msg.role === "assistant" &&
-                    streaming &&
-                    msg === messages[messages.length - 1] && (
-                      <span className="inline-block w-1.5 h-4 bg-brand-accent/70 rounded-sm ml-0.5 animate-pulse align-text-bottom" />
-                    )}
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Error notification banner */}
-        {error && messages.length > 0 && (
-          <div role="alert" className="mt-2 px-3 py-2 text-xs text-danger-text border border-danger-text/30 rounded-lg bg-danger-text/5 text-center">
-            {error}
-          </div>
-        )}
-
-        <p className="sr-only" role="status">
-          {loading ? "Loading chat history" : streaming ? "Your coach is replying" : "Coach ready"}
-        </p>
-
-        <p className="coach-note">Chat advice becomes your training plan only when you review and save a plan draft. <Link to="/plans/history">Plan history</Link></p>
-
-        {/* Message Input Form */}
-        <form
-          onSubmit={handleSend}
-          className="mt-3 flex items-center gap-2 bg-input border border-border-subtle rounded-xl px-3 py-2 focus-within:border-brand-accent/50 transition-colors"
-        >
-          <input
-            ref={inputRef}
-            aria-label="Message your coach"
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={loading ? "Loading chat history…" : streaming ? "Waiting for response…" : "Ask your coach…"}
-            disabled={loading || streaming}
-            className="min-w-0 flex-1 bg-transparent text-text-main text-sm placeholder:text-text-muted outline-none disabled:opacity-50"
-            id="coach-input"
-            autoComplete="off"
-          />
-          <button
-            type="submit"
-            aria-label="Send message"
-            disabled={loading || streaming || !input.trim()}
-            className="p-2 rounded-lg bg-brand-strong text-white hover:bg-brand-strong-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95 cursor-pointer"
-            id="coach-send-btn"
+    <Layout contentClassName="coach">
+      <PageHeading eyebrow="A little guidance goes a long way" title="AI Coach" description="Talk through your training, technique and recovery." />
+      <div className="coach-grid">
+        <section className="coach-chat" aria-label="Chat">
+          {/* Scrollable Conversation History Container */}
+          <div
+            role="log"
+            aria-label="Conversation with your coach"
+            aria-live="off"
+            tabIndex={0}
+            onScroll={(event) => {
+              const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
+              followMessagesRef.current = scrollHeight - scrollTop - clientHeight < 80;
+            }}
+            className="coach-log"
           >
-            {streaming ? (
-              <IconLoader2 size={18} className="animate-spin" aria-hidden="true" />
+            {more && messages.length > 0 && <button type="button" className="btn btn--quiet btn--sm coach-earlier" disabled={streaming} onClick={earlier}>Load earlier messages</button>}
+            {loading ? (
+              <div className="coach-placeholder"><IconLoader2 className="spinner-icon" size={28} aria-hidden="true" /></div>
+            ) : error && messages.length === 0 ? (
+              <div className="coach-placeholder"><p role="alert" className="coach-load-error">{error}</p></div>
+            ) : messages.length === 0 ? (
+              /* Empty State */
+              <div className="coach-placeholder coach-empty">
+                <span className="coach-mark coach-mark--lg" aria-hidden="true"><span className="bar" /></span>
+                <p>Ask your AI coach about exercises, form tips, recovery, or anything training-related.</p>
+              </div>
             ) : (
-              <IconSend2 size={18} aria-hidden="true" />
+              /* Rendered Messages */
+              messages.map((msg) => (
+                <div key={msg.id} className={`coach-message coach-message--${msg.role === "user" ? "user" : "coach"}`}>
+                  {msg.role === "user"
+                    ? <span className="coach-avatar" aria-hidden="true"><IconUser size={15} stroke={2} /></span>
+                    : <span className="coach-mark" aria-hidden="true"><span className="bar" /></span>}
+                  {/* Message Bubble (Markdown formatted for coach, raw for user) */}
+                  <div className={`coach-bubble${msg.role === "user" ? "" : " markdown-body"}`}>
+                    {msg.role === "user" ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>}
+                    {msg.incomplete && <p className="coach-incomplete">Incomplete response — retry your message.</p>}
+                    {msg.role === "assistant" && streaming && msg === messages[messages.length - 1] && <span className="coach-caret" aria-hidden="true" />}
+                    {msg.role === "assistant" && msg.persisted && <button type="button" className="btn btn--secondary btn--sm coach-to-plan" disabled={proposing || streaming} onClick={() => propose(msg.id)}><IconFileText size={16} stroke={1.75} aria-hidden="true" />Turn this into a plan</button>}
+                  </div>
+                </div>
+              ))
             )}
-          </button>
-        </form>
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Error notification banner */}
+          {error && messages.length > 0 && <Notice tone="error" className="coach-error"><p role="alert">{error}</p></Notice>}
+
+          <p className="sr-only" role="status">
+            {loading ? "Loading chat history" : streaming ? "Your coach is replying" : "Coach ready"}
+          </p>
+
+          {/* Message Input Form */}
+          <form onSubmit={handleSend} className="coach-composer">
+            <textarea
+              ref={inputRef}
+              aria-label="Message your coach"
+              aria-describedby="coach-composer-hint"
+              rows={1}
+              maxLength={MESSAGE_LIMIT}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleComposerKey}
+              placeholder={loading ? "Loading chat history…" : streaming ? "Waiting for response…" : "Ask your coach…"}
+              disabled={loading || streaming}
+              className="coach-input"
+              id="coach-input"
+              autoComplete="off"
+            />
+            <button
+              type="submit"
+              aria-label="Send message"
+              disabled={loading || streaming || !input.trim()}
+              className="btn btn--primary coach-send"
+              id="coach-send-btn"
+            >
+              {streaming ? <IconLoader2 size={18} className="spinner-icon" aria-hidden="true" /> : <IconSend2 size={18} aria-hidden="true" />}
+            </button>
+          </form>
+          <p id="coach-composer-hint" className="coach-hint">
+            <span className="coach-hint-keys">Enter to send · Shift+Enter for a new line</span>
+            {input.length > MESSAGE_LIMIT - 500 && <span className="num">{input.length}/{MESSAGE_LIMIT}</span>}
+          </p>
+        </section>
+
+        <aside className="coach-side" aria-label="Plan tools">
+          <details className="disclosure coach-routine">
+            <summary><IconSparkles size={20} stroke={1.75} className="text-accent-text" aria-hidden="true" />Improve my existing routine</summary>
+            <div className="disclosure-body">
+              <label className="field">
+                <span className="field-label">Paste your routine or describe improvements</span>
+                <textarea className="textarea" value={routine} onChange={e => setRoutine(e.target.value)} maxLength={6000} />
+              </label>
+              <label className="field">
+                <span className="field-label">Exercises to keep (comma separated)</span>
+                <input className="input" value={keep} onChange={e => setKeep(e.target.value)} />
+              </label>
+              <button type="button" className="btn btn--primary" disabled={proposing || !routine.trim()} onClick={() => propose()}>{proposing ? <><span className="spinner" aria-hidden="true" />Preparing draft…</> : "Create plan draft"}</button>
+            </div>
+          </details>
+          {openDrafts.length > 0 && <ul className="ledger coach-drafts">{openDrafts.map(p => <li key={p.id}>
+            <Link className="ledger-row" to={`/plans/proposals/${p.id}`}>
+              <IconFileText size={20} stroke={1.75} className="text-accent-text" aria-hidden="true" />
+              <span className="ledger-main"><span className="ledger-title">Plan draft · {p.plan_data?.title || p.status} · Review</span></span>
+              <IconChevronRight size={18} stroke={1.75} className="ledger-end" aria-hidden="true" />
+            </Link>
+          </li>)}</ul>}
+          <p className="coach-note">Chat advice becomes your training plan only when you review and save a plan draft. <Link className="link" to="/plans/history">Plan history</Link></p>
+        </aside>
       </div>
     </Layout>
   );
