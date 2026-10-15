@@ -123,7 +123,7 @@ leans into that instead of the generic SaaS card look.
   760 px column. Spacing comes from a 4 px scale, and radii come in three sizes (6 / 10 /
   16 px).
 - **Mobile-first logging.**
-  - Set rows are compact: `# · kg · reps · ✓ · ⋯`, with remove as an in-row icon.
+  - Set rows are compact: `# · kg · reps · ✓ · ×`, with remove as an in-row icon.
   - The finish bar is one line and sits directly above the tab bar.
   - Exercise art shrinks to a thumbnail.
   - The coach gets a multi-line composer.
@@ -133,3 +133,116 @@ Implementation rules: the same stack (React 19, Vite 8, Tailwind 4). All design 
 `src/styles/tokens.css` (CSS custom properties, exposed to Tailwind through `@theme`). The
 component classes are in `src/styles/components.css`. API calls, payloads, auth and token
 handling are unchanged.
+
+## 4. Measured before → after
+
+Same mocked data, same states, same widths (390 and 1440 px), dark theme unless noted.
+
+| Metric | Before | After |
+|---|---:|---:|
+| Text elements under 12 px (dashboard) | 19 | **0** (0 on every page) |
+| WCAG AA contrast failures, dark and light | 0 / 0 | **0 / 0** |
+| Controls under 44 px tall (excluding in-sentence links and the clipped skip link) | header icons 40 px, nav 42 px, small buttons on every page | **0** |
+| Logger set-row pitch (390 px) | 114 px | **52 px** |
+| Fixed bars covering the 844 px logger screen | 208 px (25%) | **153 px (18%)** |
+| Coach conversation height on an 844 px phone | ~300 px | **~510 px** |
+| Plan review page height (390 / 1440 px) | 9,329 / 8,227 px | **2,345 / 1,671 px** |
+| Heading-level skips (Plan history `h1 → h3`) | 1 | **0** |
+| Entry JS chunk (raw / gzip) | 374.95 / 117.75 kB | **287.58 / 94.74 kB** (−23% / −20%) |
+| CSS (raw / gzip) | 44.76 / 9.44 kB | 56.12 / 11.94 kB |
+| Web fonts | none | Archivo Variable, 90 kB latin woff2 (`font-display: swap`) |
+| Brand typography | system stack | Archivo Variable |
+
+Screens to compare are in `docs/redesign-screenshots/before|after/`, for example:
+
+- `log-active-390.png`
+- `log-saved-390.png`
+- `plan-review-1440.png`
+- `progress-1440.png`
+- `coach-390.png`
+- `login-1440.png`
+
+## 5. Verification
+
+- **Inventory:** 129 of 129 items in `REDESIGN_INVENTORY.md` are present (✅). The notes say
+  what changed and which paths couldn't be exercised with mocks.
+- **Interaction suite:** `GitHub/.claude/tools/fitness-interactions.mjs` passes **110/110**
+  checks. They cover:
+  - auth, including redirects, errors, payloads and sign-out;
+  - theme persistence and the skip link;
+  - navigation and focus;
+  - mobile layout;
+  - session-check failure, dashboard empty/error/draft states;
+  - the full logging flow: validation, remove/undo, add set, note, increment refetch, copy
+    previous, discard confirmation, IndexedDB reload recovery, finish and the payload shape;
+  - coach: multi-line send, the Enter/Shift+Enter rules, streaming, focus return, Markdown
+    tables, routine → draft payload;
+  - progress: goal payload, ideas, export download, empty/error;
+  - onboarding: validation, focus, number coercion, generate and preferences-only;
+  - plan review: dirty gating, save/apply/refine payloads;
+  - restore, session correction payload, and the 404 page.
+
+  No unexpected console errors or page errors.
+- **PWA:** `fitness-pwa.mjs` passes **8/8** on a production build: manifest, icons, favicon,
+  service worker registration, `fitai-public-v2` offline cache, offline navigation fallback,
+  font loading, no page errors.
+- **Frontend checks:** `npm test` passes 31/31 (30 existing plus a new `countLabel` test).
+  `npm run lint` (oxlint) is clean and `npm run build` succeeds.
+- **Backend checks:** `pytest` passes 74/74. The tests set their own throwaway env vars and use
+  in-memory SQLite, so no secrets were needed. No backend file changed.
+- **Unchanged API and data layer:** a `git diff 8692cdb` over `frontend/src/api`, `hooks`,
+  `context/Auth*`, `utils/{authSession,drafts,plans,onboarding,apiError,workout}.js` and
+  `vercel.json` is empty.
+
+## 6. Scores after the redesign
+
+| Area | Before | After | What changed / what's left |
+|---|---:|---:|---|
+| Visual design & consistency | 5 | **8** | **Changed:** one token-driven system (warm iron neutrals, a single terracotta accent, state colours). Archivo condensed display type and tabular numerals, the knurl texture and plate-bar motif, one shell width, and the same page header on every page.<br>**Left:** the exercise artwork is the original SVG set (only recoloured by tokens). |
+| UX & navigation | 5 | **8** | **Changed:**<br>- compact one-tap set rows;<br>- the saved screen shows real next targets;<br>- multi-line coach composer;<br>- summary-first plan review;<br>- one primary action on the dashboard;<br>- the selected day is highlighted;<br>- recent sessions link to their detail;<br>- loading and empty states on Plan history;<br>- plural-correct copy.<br>**Left (not in the redesign scope, see §7):** "Next up" still ignores history for non-weekday day names; no rest timer. |
+| Responsiveness / mobile | 6 | **8** | No overflow at 390 px anywhere. The logger and coach are reworked for phones, form fields are 16 px (no iOS zoom), and the stepper and choice grids adapt.<br>**Left:** not tested on physical devices. |
+| Accessibility | 6 | **8** | **Changed:**<br>- no sub-12 px text;<br>- AA contrast in both themes;<br>- 44 px controls;<br>- constant set-toggle labels with `aria-pressed`;<br>- the login error is linked to its inputs;<br>- the heading skip is fixed;<br>- focus returns to the coach composer;<br>- the theme respects the system preference.<br>**Left:** no screen-reader pass with real assistive technology. |
+| Performance | 6 | **7** | Every page is code-split and the entry chunk is 20% smaller (gzip).<br>**Costs:** a self-hosted 90 kB font, and CSS +2.5 kB gzip.<br>**Left (changing it would alter requests):** the load-increment field still sends one request per keystroke. |
+| Code quality & structure | 6 | **8** | **Changed:** tokens, base, component and page style layers; shared `Layout`, `PageHeading`, `AuthLayout`, `Notice`, `BackLink` and `LoadingLine`; Login and Register are no longer duplicated; dead CSS and files are removed; markup is readable multi-line JSX.<br>**Left:** two `apiError` helpers, legacy helpers in `utils/workout.js`, and dense one-line logic that was kept verbatim on purpose. |
+| SEO basics | 4 | **6** | **Added:** Open Graph and Twitter tags, `color-scheme`, a theme-colour that follows the theme, and a branded favicon.<br>**Left:** `og:url`/canonical (the production domain isn't confirmed in this repo), a 1200×630 social image (the 512 px icon is used), and per-route meta beyond `document.title` (it's a client-rendered SPA). |
+| Security red flags (report only) | 6 | **6** | Not changed by design. The inline pre-paint theme script in `index.html` will need a CSP hash once a Content-Security-Policy is added. See §7. |
+
+## 7. Not done, not verified, and issues for the owner
+
+**Couldn't run or verify:**
+
+- **Real backend and AI provider:** both need real secrets, so every signed-in screen was
+  driven through a mock that returns the backend's exact response shapes.
+- **Real devices and assistive tech:** no physical phones and no screen readers. Headless
+  Edge only.
+- **Install flows:** the browser install prompt and the "update waiting" service-worker flow
+  can't be triggered headlessly. Their code is unchanged.
+- **Unexercised paths:** a few paths aren't reachable with the fixtures (chat paging, history
+  cursors, the storage conflict across tabs, legacy prescriptions). They're listed in the
+  inventory.
+
+**Backend, deployment and security issues to fix (report only, nothing changed):**
+
+1. **Vercel config:** the SPA rewrites and security headers in the root `vercel.json` aren't
+   served if the Vercel project is rooted at `frontend/`. Sub-routes then 404 on reload (2026-10-10
+   audit, F-01). Restore `frontend/vercel.json` or point the project at the repo root.
+2. **No Content-Security-Policy, and the JWT lives in `localStorage`.** Any XSS could read the
+   token. Consider httpOnly cookies plus a CSP, and remember the hash for the inline theme
+   script.
+3. **No per-user limit on `/chat/`.** Each message is a paid provider call; only login and
+   register are rate-limited, per IP (F-05).
+4. **Chat history window can break provider calls.** It can start with an assistant message,
+   which the provider rejects, so roughly every 10th coach reply fails (F-02).
+5. **Dependency advisories:** `python-jose` (unmaintained, with a critical advisory) and
+   pinned packages with open advisories (F-15). Move JWT to PyJWT.
+6. **Public API docs:** `/docs` and `/openapi.json` are public in production (F-16).
+7. **Dashboard and Progress can disagree on "this week".** The dashboard calls
+   `GET /sessions/summary` without `today`, so the server's date is used, while Progress sends
+   the local date. Near midnight or across time zones the two can differ. The fix is one query
+   parameter in `Dashboard.jsx`, but it changes an API request, so it's left for the owner.
+8. **Redirect round trip:** the dashboard requests `/sessions` without the trailing slash, and
+   FastAPI answers with a 307 to `/sessions/`, costing one extra round trip.
+9. **Short draft timeout:** "Turn this into a plan" uses the default 30 s axios timeout, while
+   onboarding uses 120 s for the same endpoint. Slow drafts show "Could not connect…" (F-04).
+10. **Missing account basics:** there's no account deletion, password reset or privacy notice,
+    although health data and injuries are sent to the AI provider (F-06).
