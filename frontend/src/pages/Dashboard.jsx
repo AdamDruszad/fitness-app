@@ -3,16 +3,11 @@ import PageHeading from '../components/PageHeading';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import client from '../api/client';
-import { IconFlame, IconBarbell, IconChevronRight, IconPlayerPlayFilled, IconArrowUpRight, IconHistory, IconSparkles, IconRefresh } from '@tabler/icons-react';
+import { IconFlame, IconBarbell, IconChevronRight, IconCalendar, IconPlayerPlayFilled, IconArrowUpRight } from '@tabler/icons-react';
 import { getNextTrainingDay } from '../utils/workout';
 import { loadDraft } from '../utils/drafts';
 import { useAuth } from '../hooks/useAuth';
-import { countLabel } from '../utils/format';
-import { Notice, LoadingLine } from '../components/ui';
 import InstallHelp from '../components/InstallHelp';
-
-const shortDate = date => new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-const dose = exercise => exercise.measurement === 'duration' ? `${exercise.sets} × ${exercise.duration_seconds} s` : `${exercise.sets} × ${exercise.reps}`;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -56,34 +51,14 @@ export default function Dashboard() {
   const completed = sessions.filter(s => s.status === 'completed');
   const recentCount = sessionsLoading || sessionsError ? '—' : completed.length;
   const weekCount = summary?.week_completed ?? '—';
-  const retry = () => setReload(value => value + 1);
 
-  return <Layout contentClassName="dashboard">
-    <PageHeading eyebrow="Your training space" title="Your plan" description="One session at a time. Make today count.">
-      <Link className="btn btn--secondary" to="/coach"><IconSparkles size={18} stroke={1.75} aria-hidden="true" />Improve my existing routine</Link>
-      <Link className="btn btn--quiet" to="/plans/history"><IconHistory size={18} stroke={1.75} aria-hidden="true" />Plan history</Link>
-    </PageHeading>
-    {plan && <p className="plan-meta"><span className="plan-meta-title">{plan.plan_data.title}</span><span className="tag">Version {plan.version}</span></p>}
-
-    {draft && <section className="card card--hero resume" aria-labelledby="resume-heading">
-      <div className="stack-sm">
-        <h2 id="resume-heading" className="resume-heading">
-          <span className="eyebrow"><span className="status-dot status-dot--busy" aria-hidden="true" />Workout in progress ·</span>{' '}
-          <span className="display resume-title">{draft.day.day}</span>
-        </h2>
-        <p className="muted">Plan version {draft.version} · {draft.pending ? 'Waiting to sync' : 'Saved on this device'}</p>
-      </div>
-      <Link className="btn btn--primary btn--lg" to="/log"><IconPlayerPlayFilled size={18} aria-hidden="true" />Resume workout</Link>
-    </section>}
-
-    {error ? <Notice tone="error"><p role="alert">{error}</p><button className="btn btn--secondary btn--sm" type="button" onClick={retry}><IconRefresh size={16} aria-hidden="true" />Try again</button></Notice>
-      : loading ? <div className="dashboard-loading"><LoadingLine>Loading your plan…</LoadingLine><div className="skeleton dashboard-skeleton" aria-hidden="true" /></div>
-      : !nextDay ? <div className="empty dashboard-empty">
-          <IconBarbell size={36} stroke={1.5} aria-hidden="true" />
-          <h2>Your next chapter starts here.</h2>
-          <p>Create a plan around your goals, equipment and schedule.</p>
-          <Link to="/onboarding" className="btn btn--primary btn--lg">Create your plan<IconArrowUpRight size={18} aria-hidden="true" /></Link>
-        </div>
+  return <Layout contentClassName="dashboard-content">
+    <PageHeading eyebrow="Your training space" title="Your plan" description="One session at a time. Make today count." />
+    <div className="continuity-actions"><Link className="text-link" to="/coach">Improve my existing routine</Link><Link className="text-link" to="/plans/history">Plan history</Link>{plan && <span>{plan.plan_data.title} · Version {plan.version}</span>}</div>
+    {draft && <section className="continuity-card"><h2>Workout in progress · {draft.day.day}</h2><p>Plan version {draft.version} · {draft.pending ? 'Waiting to sync' : 'Saved on this device'}</p><Link className="fitai-primary-button" to="/log">Resume workout</Link></section>}
+    {error ? <div className="workout-empty"><p role="alert">{error}</p><button className="fitai-secondary-button" type="button" onClick={() => setReload(value => value + 1)}>Try again</button></div>
+      : loading ? <div className="workout-empty" role="status"><IconBarbell size={32} aria-hidden="true" /><p>Loading your plan…</p></div>
+      : !nextDay ? <div className="dashboard-empty"><IconBarbell size={38} aria-hidden="true" /><h2>Your next chapter starts here.</h2><p>Create a plan around your goals, equipment and schedule.</p><Link to="/onboarding" className="fitai-primary-button">Create your plan<IconArrowUpRight size={17} aria-hidden="true" /></Link></div>
       : <div className="dashboard-grid">
         <div className="stack-lg">
           <section className={`card next-up${draft ? '' : ' card--hero'}`} aria-labelledby="next-workout-heading">
@@ -113,16 +88,12 @@ export default function Dashboard() {
             </li>)}</ul>
           </section>
         </div>
-
-        <aside className="stack-lg" aria-label="Training activity">
-          <section className="card glance" aria-labelledby="overview-heading">
-            <div className="section-head"><h2 id="overview-heading">At a glance</h2></div>
-            <div className="glance-stats">
-              <div className="stat"><strong className="stat-value num">{plan?.plan_data?.weeks || 8}<small>weeks</small></strong><span className="stat-label">Intended length</span></div>
-              <div className="stat"><strong className="stat-value num">{weekCount}</strong><span className="stat-label">Completed this week</span></div>
-            </div>
-            <p className="glance-foot"><span className="num">{recentCount}</span> {recentCount === 1 ? 'recent session' : 'recent sessions'} loaded</p>
-            <Link to="/progress" className="btn btn--ghost glance-link">Explore your progress<IconArrowUpRight size={16} aria-hidden="true" /></Link>
+        <aside className="dashboard-secondary" aria-label="Training activity">
+          <section className="training-overview" aria-labelledby="overview-heading">
+            <div className="section-heading"><h2 id="overview-heading">At a glance</h2><IconChartMark aria-hidden="true" /></div>
+            <div className="overview-stats"><div><strong>{plan?.plan_data?.weeks || 8}<small>weeks</small></strong><span>Intended length</span></div><div><strong>{weekCount}</strong><span>Completed this week</span></div></div>
+            <p>{recentCount} recent sessions loaded</p>
+            <Link to="/progress" className="text-link">Explore your progress<IconArrowUpRight size={16} aria-hidden="true" /></Link>
           </section>
 
           <section aria-labelledby="recent-sessions-heading">

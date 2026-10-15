@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
-import { IconRefresh, IconSparkles } from "@tabler/icons-react";
 import client from "../api/client";
 import Layout from "../components/Layout";
 import PageHeading from "../components/PageHeading";
 import PlanEditor from "../components/PlanEditor";
-import { BackLink, Notice } from "../components/ui";
 import { apiError, planChanges } from "../utils/plans";
 import { useAuth } from "../hooks/useAuth";
 
@@ -51,44 +49,16 @@ export default function PlanReview() {
     try { const { data } = await client.post("/plans/proposals", { request_id: crypto.randomUUID(), base_plan_id: proposal.active_id, from_proposal_id: id, instructions, keep_exercises: proposal.keep_exercises }); navigate(`/plans/proposals/${data.id}`); }
     catch (e) { setError(apiError(e)); } finally { setBusy(false); }
   }
-  const changes = edited ? planChanges(proposal?.base_plan?.plan_data, edited) : [];
-  const counts = ["Kept", "Changed", "Added", "Removed"].map(label => [label, changes.filter(c => c.label === label).length]).filter(([, n]) => n);
-  const statusText = proposal ? (proposal.status === "applied" ? "Plan saved. Future workouts use the activated version." : proposal.status === "ready" ? dirty ? "Draft edits are not saved yet." : "Draft saved. Your active plan has not changed." : proposal.error || "Preparing your draft. Reload to check its status.") : "";
-  const statusTone = proposal?.status === "applied" ? "ok" : proposal?.status === "ready" ? dirty ? "warn" : "info" : proposal?.error ? "error" : "info";
-  return <Layout contentClassName="plan-review">
-    <BackLink to="/coach">Back to Coach</BackLink>
-    <PageHeading eyebrow="Your routine, made actionable" title="Review your plan" description="Review the complete routine before making it active. Previous versions and workouts stay in history." />
-    {error && <Notice tone="error" className="review-notice"><p role="alert">{error}</p></Notice>}
-    {!proposal ? <button type="button" className="btn btn--secondary" onClick={() => setRetry(v => v + 1)}>Load plan draft</button> : <>
-      <Notice tone={statusTone} className="review-notice"><div className="review-status"><p role="status">{statusText}</p>{proposal.status === "applied" && <Link to="/" className="btn btn--primary btn--sm">Open my plan</Link>}</div></Notice>
-      {proposal.stale && <Notice tone="warn" className="review-notice">Your active plan changed. Ask Coach below to review this draft against the current version.</Notice>}
-      {missingFavorites.length > 0 && <Notice tone="warn" className="review-notice">Requested exercises missing from this draft: {missingFavorites.join(", ")}. Restore them before applying.</Notice>}
-      {edited && <><div className="review-grid">
-        <aside className="card review-changes" aria-labelledby="changes-heading">
-          <h2 id="changes-heading" className="section-title">What changed</h2>
-          {counts.length > 0 && <p className="change-counts">{counts.map(([label, n]) => <span key={label} className={`tag change-tag change-tag--${label.toLowerCase()}`}>{label} <span className="num">{n}</span></span>)}</p>}
-          <ul className="plan-changes">{changes.map((c, i) => <li key={i} className={`plan-change plan-change--${c.label.toLowerCase()}`}><p className="plan-change-title"><span className="plan-change-label">{c.label}:</span> {c.name}</p><p className="plan-change-detail">{c.detail}</p></li>)}</ul>
-          {proposal.keep_exercises.length > 0 && <p className="keep-list"><span className="muted">Requested to keep:</span> {proposal.keep_exercises.join(", ")}</p>}
-        </aside>
-        <section className="review-editor" aria-label="Edit the draft">
-          <PlanEditor plan={edited} onChange={edit} disabled={busy || proposal.status !== "ready"} />
-        </section>
-      </div>
-      {proposal.status === "ready" && <div className="action-bar review-bar">
-        <p className="action-bar-text">Started workouts keep their original plan snapshot.</p>
-        <div className="action-bar-actions">
-          <button type="button" className="btn btn--secondary" disabled={busy || !dirty} onClick={save}>Save draft edits</button>
-          <button type="button" className="btn btn--primary" disabled={busy || dirty || proposal.stale || missingFavorites.length > 0} onClick={apply}>{busy ? <><span className="spinner" aria-hidden="true" />Saving…</> : "Save as my active plan"}</button>
-        </div>
-      </div>}</>}
-      <section className="card review-adjust" aria-labelledby="adjust-heading">
-        <h2 id="adjust-heading" className="section-title"><IconSparkles size={20} stroke={1.75} className="text-accent-text" aria-hidden="true" />Ask Coach to adjust</h2>
-        <label className="field"><span className="field-label">Changes to make</span><textarea className="textarea" value={instructions} onChange={e => setInstructions(e.target.value)} maxLength={6000} /></label>
-        <div className="row">
-          <button type="button" className="btn btn--secondary" disabled={busy || dirty || !instructions.trim()} onClick={refine}>Create revised draft</button>
-          <button type="button" className="btn btn--quiet" disabled={busy} onClick={() => setRetry(v => v + 1)}><IconRefresh size={16} aria-hidden="true" />Reload saved draft</button>
-        </div>
-      </section>
+  return <Layout><Link to="/coach" className="text-link">Back to Coach</Link><PageHeading eyebrow="Your routine, made actionable" title="Review your plan" description="Review the complete routine before making it active. Previous versions and workouts stay in history." />
+    {error && <p role="alert" className="continuity-error">{error}</p>}
+    {!proposal ? <button className="fitai-secondary-button" onClick={() => setRetry(v => v + 1)}>Load plan draft</button> : <>
+      <p role="status">{proposal.status === "applied" ? "Plan saved. Future workouts use the activated version." : proposal.status === "ready" ? dirty ? "Draft edits are not saved yet." : "Draft saved. Your active plan has not changed." : proposal.error || "Preparing your draft. Reload to check its status."}</p>
+      {proposal.status === "applied" && <Link to="/" className="fitai-primary-button">Open my plan</Link>}
+      {proposal.stale && <p className="continuity-error">Your active plan changed. Ask Coach below to review this draft against the current version.</p>}
+      {missingFavorites.length > 0 && <p className="continuity-error">Requested exercises missing from this draft: {missingFavorites.join(", ")}. Restore them before applying.</p>}
+      {edited && <><div className="review-grid"><aside className="continuity-card"><h2>What changed</h2><ul className="plan-changes">{planChanges(proposal.base_plan?.plan_data, edited).map((c, i) => <li key={i}><strong>{c.label}: {c.name}</strong><p>{c.detail}</p></li>)}</ul>{proposal.keep_exercises.length > 0 && <p>Requested to keep: {proposal.keep_exercises.join(", ")}</p>}</aside><PlanEditor plan={edited} onChange={edit} disabled={busy || proposal.status !== "ready"} /></div>
+      {proposal.status === "ready" && <div className="workout-savebar"><p>Started workouts keep their original plan snapshot.</p><button className="fitai-secondary-button" disabled={busy || !dirty} onClick={save}>Save draft edits</button><button className="fitai-primary-button" disabled={busy || dirty || proposal.stale || missingFavorites.length > 0} onClick={apply}>{busy ? "Saving…" : "Save as my active plan"}</button></div>}</>}
+      <section className="continuity-card"><h2>Ask Coach to adjust</h2><label>Changes to make<textarea value={instructions} onChange={e => setInstructions(e.target.value)} maxLength={6000} /></label><button className="fitai-secondary-button" disabled={busy || dirty || !instructions.trim()} onClick={refine}>Create revised draft</button><button className="text-link" disabled={busy} onClick={() => setRetry(v => v + 1)}>Reload saved draft</button></section>
     </>}
   </Layout>;
 }

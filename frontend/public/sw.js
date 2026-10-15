@@ -1,5 +1,5 @@
 /* Installable shell only. Private API responses and authenticated pages are never cached. */
-const CACHE = "fitai-public-v2";
+const CACHE = "fitai-public-v1";
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.add("/offline.html")));
 });

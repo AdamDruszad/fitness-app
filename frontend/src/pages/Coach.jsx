@@ -261,13 +261,103 @@ export default function Coach() {
     } catch (e) { setError(apiError(e)); } finally { setProposing(false); }
   }
 
-  // Return focus to the composer once a reply finishes. The textarea is disabled while
-  // streaming, so focusing it in handleSend's finally block can run too early.
-  const wasStreaming = useRef(false);
-  useEffect(() => {
-    if (wasStreaming.current && !streaming) inputRef.current?.focus();
-    wasStreaming.current = streaming;
-  }, [streaming]);
+  return (
+    <Layout contentClassName="coach-content">
+      <div className="coach-layout">
+        {/* Header */}
+        <PageHeading eyebrow="A little guidance goes a long way" title="AI Coach" description="Talk through your training, technique and recovery." />
+        <details className="continuity-card"><summary>Improve my existing routine</summary><label>Paste your routine or describe improvements<textarea value={routine} onChange={e => setRoutine(e.target.value)} maxLength={6000} /></label><label>Exercises to keep (comma separated)<input value={keep} onChange={e => setKeep(e.target.value)} /></label><button className="fitai-secondary-button" disabled={proposing || !routine.trim()} onClick={() => propose()}>{proposing ? "Preparing draft…" : "Create plan draft"}</button></details>
+        {proposals.filter(p => p.status !== "applied").slice(0, 3).map(p => <Link className="text-link" key={p.id} to={`/plans/proposals/${p.id}`}>Plan draft · {p.plan_data?.title || p.status} · Review</Link>)}
+
+        {/* Scrollable Conversation History Container */}
+        <div
+          role="log"
+          aria-label="Conversation with your coach"
+          aria-live="off"
+          tabIndex={0}
+          onScroll={(event) => {
+            const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
+            followMessagesRef.current = scrollHeight - scrollTop - clientHeight < 80;
+          }}
+          className="coach-conversation"
+        >
+          {more && messages.length > 0 && <button className="fitai-secondary-button" disabled={streaming} onClick={earlier}>Load earlier messages</button>}
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <IconLoader2
+                className="text-brand-accent animate-spin"
+                size={28}
+              aria-hidden="true" />
+            </div>
+          ) : error && messages.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p role="alert" className="text-danger-text text-sm">{error}</p>
+            </div>
+          ) : messages.length === 0 ? (
+            /* Empty State */
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-4">
+              <div className="p-4 bg-brand-accent/10 rounded-full">
+                <IconRobot size={32} className="text-brand-accent/60" aria-hidden="true" />
+              </div>
+              <p className="text-text-muted text-sm max-w-xs">
+                Ask your AI coach about exercises, form tips, recovery, or
+                anything training-related.
+              </p>
+            </div>
+          ) : (
+            /* Rendered Messages */
+            messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`coach-message flex gap-2.5 ${
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                }`}
+              >
+                {/* User / Assistant Avatar */}
+                <div
+                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
+                    msg.role === "user"
+                      ? "bg-brand-accent/20"
+                      : "bg-raised border border-border-subtle"
+                  }`}
+                >
+                  {msg.role === "user" ? (
+                    <IconUser
+                      size={14}
+                      className="text-brand-accent"
+                      stroke={2}
+                    aria-hidden="true" />
+                  ) : (
+                    <IconRobot
+                      size={14}
+                      className="text-text-muted"
+                      stroke={2}
+                    aria-hidden="true" />
+                  )}
+                </div>
+
+                {/* Message Bubble (Markdown formatted for coach, raw for user) */}
+                <div
+                  className={`coach-bubble rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed break-words ${
+                    msg.role === "user"
+                      ? "bg-brand-strong text-white rounded-tr-md whitespace-pre-wrap"
+                      : "bg-raised border border-border-subtle text-text-main rounded-tl-md markdown-body"
+                  }`}
+                >
+                  {msg.role === "user" ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>}
+                  {msg.incomplete && <p className="text-danger-text">Incomplete response — retry your message.</p>}
+                  {msg.role === "assistant" && msg.persisted && <button className="text-link" disabled={proposing || streaming} onClick={() => propose(msg.id)}>Turn this into a plan</button>}
+                  {msg.role === "assistant" &&
+                    streaming &&
+                    msg === messages[messages.length - 1] && (
+                      <span className="inline-block w-1.5 h-4 bg-brand-accent/70 rounded-sm ml-0.5 animate-pulse align-text-bottom" />
+                    )}
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={bottomRef} />
+        </div>
 
   // Grow the composer with its content, up to the CSS max-height.
   useLayoutEffect(() => {
@@ -285,7 +375,7 @@ export default function Coach() {
     event.currentTarget.form?.requestSubmit();
   }
 
-  const openDrafts = proposals.filter(p => p.status !== "applied").slice(0, 3);
+        <p className="coach-note">Chat advice becomes your training plan only when you review and save a plan draft. <Link to="/plans/history">Plan history</Link></p>
 
   return (
     <Layout contentClassName="coach">
