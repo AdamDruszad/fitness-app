@@ -50,7 +50,7 @@
 .skip-link {
   position: fixed;
   left: var(--s-4);
-  top: -80px;
+  top: var(--s-3);
   z-index: var(--z-skip);
   padding: var(--s-3) var(--s-5);
   border-radius: var(--r-sm);
@@ -58,7 +58,7 @@
   color: #fff;
   font-weight: 600;
 }
-.skip-link:focus { top: var(--s-3); }
+.skip-link:not(:focus) { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
