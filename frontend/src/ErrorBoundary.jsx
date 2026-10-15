@@ -30,16 +30,22 @@ export class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="center-state">
-          <div className="center-panel card" role="alert">
-            <span className="brand" aria-hidden="true"><span className="bar" /><span>FitAI</span></span>
-            <h1 className="section-title">Something went wrong</h1>
-            <p className="muted">An unexpected application error occurred. You can reload the page or navigate back.</p>
-            {import.meta.env.DEV && <details className="disclosure error-details">
+        <div className="min-h-screen bg-base flex items-center justify-center p-6 text-text-main">
+          <div className="bg-surface border border-red-500/30 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+            <h2 className="text-xl font-bold text-danger-text mb-2">Something went wrong</h2>
+            <p className="text-text-muted text-sm mb-4">
+              An unexpected application error occurred. You can reload the page or navigate back.
+            </p>
+            {import.meta.env.DEV && <details className="text-xs text-text-muted/80 bg-input p-3 rounded-lg overflow-x-auto whitespace-pre-wrap border border-border-subtle mb-4">
               <summary>Error details</summary>
-              <pre className="disclosure-body">{this.state.error && this.state.error.toString()}{"\n"}{this.state.errorInfo && this.state.errorInfo.componentStack}</pre>
+              {this.state.error && this.state.error.toString()}
+              <br />
+              {this.state.errorInfo && this.state.errorInfo.componentStack}
             </details>}
-            <button type="button" onClick={() => window.location.reload()} className="btn btn--primary">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-brand-strong text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-brand-strong-hover transition cursor-pointer"
+            >
               Reload application
             </button>
           </div>
