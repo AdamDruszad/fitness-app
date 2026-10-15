@@ -37,24 +37,6 @@
 .glance-foot { padding-top: var(--s-4); border-top: 1px solid var(--line); color: var(--text-2); font-size: var(--fs-sm); }
 .glance-link { justify-self: start; margin-top: calc(var(--s-3) * -1); margin-left: calc(var(--s-2) * -1); }
 
-/* Recent sessions */
-.date-chip {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  flex: none;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  color: var(--text-2);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.date-chip .num { color: var(--text); font-size: var(--fs-xl); letter-spacing: 0; }
-
 .dashboard-loading { display: grid; gap: var(--s-4); }
 .dashboard-skeleton { height: 280px; border-radius: var(--r-lg); }
 .dashboard-empty { padding: clamp(var(--s-8), 5vw, var(--s-16)); background: var(--ink-1); border-style: solid; border-color: var(--line); background-image: var(--knurl); }
