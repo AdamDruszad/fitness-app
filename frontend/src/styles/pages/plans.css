@@ -87,3 +87,7 @@
   .review-bar .action-bar-actions { width: 100%; }
   .review-bar .action-bar-actions .btn { flex: 1 1 auto; }
 }
+@media (max-width: 599px) {
+  .review-bar { gap: var(--s-2); }
+  .review-bar .action-bar-text { font-size: var(--fs-xs); flex-basis: 100%; }
+}

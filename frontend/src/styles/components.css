@@ -73,7 +73,7 @@
   .btn--danger:hover:not(:disabled) { background: var(--danger-soft); }
   .btn--block { width: 100%; }
   .btn--lg { min-height: 52px; padding-inline: 24px; font-size: var(--fs-md); }
-  .btn--sm { min-height: 36px; padding: 6px 12px; font-size: var(--fs-xs); }
+  .btn--sm { min-height: var(--target); padding: 6px 12px; font-size: var(--fs-xs); }
 
   .icon-btn {
     display: inline-grid;
