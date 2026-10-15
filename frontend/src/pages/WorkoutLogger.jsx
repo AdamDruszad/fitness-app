@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { IconCheck, IconX, IconPlus, IconArrowBackUp, IconCircleCheck, IconTrendingUp, IconPlayerPlayFilled, IconTarget, IconCopy } from "@tabler/icons-react";
 import Layout from "../components/Layout";
 import PageHeading from "../components/PageHeading";
 import ExerciseArtwork from "../components/ExerciseArtwork";
+import { BackLink, Notice, LoadingLine } from "../components/ui";
 import client from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 import { readToken } from "../api/token";
 import { actualSet, completionPayload, formatSets, loadDraft, newDraft, saveDraft } from "../utils/drafts";
 import { apiError, prescription, comparableImprovement } from "../utils/plans";
+import { countLabel } from "../utils/format";
+
+const statusTone = status => /Saved on this device|Workout saved/.test(status) ? "ok" : /Not saved|Waiting/.test(status) ? "warn" : "busy";
 
 export default function WorkoutLogger() {
   const { user } = useAuth();
@@ -120,41 +125,134 @@ export default function WorkoutLogger() {
     catch (e) { setStorageError(e.message); }
   }
   const count = draft ? Object.values(draft.rows).flat().filter(r => r.done).length : 0;
+  const total = draft ? Object.values(draft.rows).flat().length : 0;
   const locked = busy || !!draft?.pending || !!storageError;
-  return <Layout><Link className="text-link" to="/">Back to my plan</Link><PageHeading eyebrow="Make every set count" title={draft?.day.day || "Workout"} description={draft ? `${draft.title} · Version ${draft.version} · ${draft.session_date}` : "Choose a workout. Your session keeps the plan version it starts with."} />
-    <p role="status">{status}</p>
-    {error && <p className="continuity-error" role="alert">{error}</p>}
-    {storageError && <div className="continuity-error" role="alert"><p>{storageError}</p><button className="fitai-secondary-button" onClick={reloadDraft}>Reload saved draft</button></div>}
-    {loading ? <p role="status">Recovering your workout…</p> : saved ? <section className="continuity-card"><h2>Workout saved</h2><p>{saved.exercise_logs.reduce((n, e) => n + e.sets_data.length, 0)} completed sets · {saved.exercise_logs.length} exercises</p><p>Session recorded. You now have a reference for next time.</p>{saved.exercise_logs.map(log => { const improvement = comparableImprovement(log, history[log.slot_id]?.previous); return improvement ? <p key={log.id}>{improvement}</p> : null; })}{Object.entries(nextTargets).slice(0, 2).map(([id, result]) => <p key={id}><strong>Next time · {saved.exercise_logs.find(l => l.slot_id === id)?.exercise_name}</strong><br />{result.target.reason}</p>)}<Link className="fitai-primary-button" to={`/sessions/${saved.id}`}>View saved session</Link><Link className="text-link" to="/">Back to my plan</Link></section> : !draft ? <>
-      {!plan && <p>Choose a plan first. <Link to="/coach">Improve my routine with Coach</Link></p>}
-      <div className="workout-days">{plan?.plan_data.days.filter(d => d.exercises.length).map(d => <button key={d.id} type="button" disabled={!!storageError} onClick={() => persist(newDraft(plan, d, owner)).catch(() => {})}>{d.day}<span>{d.focus}{location.state?.day === d.day ? " · Selected from your plan" : ""}</span></button>)}</div>
+  const selectedDay = location.state?.day;
+  const trainingDays = plan?.plan_data.days.filter(d => d.exercises.length) || [];
+
+  return <Layout contentClassName="logger">
+    <BackLink to="/">Back to my plan</BackLink>
+    <PageHeading
+      eyebrow="Make every set count"
+      title={draft?.day.day || saved?.workout_snapshot?.day?.day || "Workout"}
+      description={draft ? `${draft.title} · Version ${draft.version} · ${draft.session_date}` : saved?.workout_snapshot ? `${saved.workout_snapshot.plan_title} · Version ${saved.workout_snapshot.version} · ${saved.session_date}` : "Choose a workout. Your session keeps the plan version it starts with."}
+    >
+      <p role="status" className={`status-line${saved ? " sr-only" : ""}`}>{status && <><span className={`status-dot status-dot--${statusTone(status)}`} aria-hidden="true" />{status}</>}</p>
+    </PageHeading>
+
+    <div className="logger-alerts">
+      {error && <Notice tone="error"><p role="alert">{error}</p></Notice>}
+      {storageError && <Notice tone="error"><p role="alert">{storageError}</p><button type="button" className="btn btn--secondary btn--sm" onClick={reloadDraft}>Reload saved draft</button></Notice>}
+    </div>
+
+    {loading ? <LoadingLine>Recovering your workout…</LoadingLine> : saved ? <section className="card saved" aria-labelledby="saved-title">
+      <div className="saved-head">
+        <IconCircleCheck size={36} stroke={1.5} className="saved-icon" aria-hidden="true" />
+        <h2 id="saved-title" className="display saved-title">Workout saved</h2>
+      </div>
+      <p className="saved-stats">
+        <span><strong className="num">{saved.exercise_logs.reduce((n, e) => n + e.sets_data.length, 0)}</strong> completed sets</span>
+        <span aria-hidden="true">·</span>
+        <span><strong className="num">{saved.exercise_logs.length}</strong> {saved.exercise_logs.length === 1 ? "exercise" : "exercises"}</span>
+      </p>
+      <p className="muted">Session recorded. You now have a reference for next time.</p>
+      {saved.exercise_logs.some(log => comparableImprovement(log, history[log.slot_id]?.previous)) && <ul className="saved-wins">
+        {saved.exercise_logs.map(log => { const improvement = comparableImprovement(log, history[log.slot_id]?.previous); return improvement ? <li key={log.id}><IconTrendingUp size={18} stroke={1.75} aria-hidden="true" />{improvement}</li> : null; })}
+      </ul>}
+      {saved.exercise_logs.some(log => nextTargets[log.slot_id]?.target) && <section aria-labelledby="next-time-title" className="next-time">
+        <h3 id="next-time-title" className="section-title"><IconTarget size={18} stroke={1.75} aria-hidden="true" />Next time</h3>
+        <ul className="ledger">{saved.exercise_logs.filter(log => nextTargets[log.slot_id]?.target).map(log => { const target = nextTargets[log.slot_id].target; return <li key={log.id} className="ledger-row next-time-row">
+          <div className="ledger-main">
+            <p className="ledger-title"><span className="sr-only">Next time · </span>{log.exercise_name}{(target.reps || target.duration_seconds) && <span className="num next-time-dose">{formatSets([target], log.measurement)}</span>}</p>
+            <p className="ledger-meta">{target.reason}</p>
+          </div>
+        </li>; })}</ul>
+      </section>}
+      <div className="row">
+        <Link className="btn btn--primary" to={`/sessions/${saved.id}`}>View saved session</Link>
+        <Link className="btn btn--quiet" to="/">Back to my plan</Link>
+      </div>
+    </section> : !draft ? <>
+      {!plan && <div className="empty"><h2>Choose a plan first.</h2><p><Link className="link" to="/coach">Improve my routine with Coach</Link></p></div>}
+      {trainingDays.length > 0 && <div className="day-picker">{trainingDays.map(d => <button key={d.id} type="button" className={`day-option${selectedDay === d.day ? " is-selected" : ""}`} disabled={!!storageError} onClick={() => persist(newDraft(plan, d, owner)).catch(() => {})}>
+        <span className="day-option-name display">{d.day}</span>
+        <span className="day-option-focus">{d.focus}{selectedDay === d.day ? " · Selected from your plan" : ""}</span>
+        <span className="day-option-meta">{countLabel(d.exercises.length, "exercise")}<span className="day-option-go"><IconPlayerPlayFilled size={14} aria-hidden="true" />Start</span></span>
+      </button>)}</div>}
     </> : <>
-      {plan && plan.id !== draft.plan_id && <p>This session uses an earlier plan version. Your entries stay with this workout.</p>}
-      <p>{count} completed sets. Copying a target never marks a set done.</p>
-      {draft.day.exercises.map((ex, ei) => { const last = history[ex.id]?.previous; const target = history[ex.id]?.target; return <article className="exercise-card" key={ex.id}>
-        <div className="exercise-heading"><ExerciseArtwork name={ex.name} /><div className="exercise-heading-copy"><h2>{ex.name}</h2><p>{prescription(ex)}</p><p>Load: {ex.load_basis.replace("_", " ")}</p></div></div>
-        <div className="exercise-entry">
-          <p><strong>Last time{last ? ` · ${last.date}` : ""}</strong><br />{last ? formatSets(last.sets, ex.measurement) : "No comparable completed record yet."}</p>
-          {last && <button className="text-link" disabled={locked} onClick={() => fill(ex, true)}>Use previous values</button>}
-          {target && <details className="continuity-card"><summary>Next target{target.reps || target.duration_seconds ? ` · ${formatSets([target], ex.measurement)}` : " · Establish a baseline"}</summary><p>{target.reason}</p>
-            <label>Optional available load increment (kg)<input disabled={locked} type="number" min="0" max="100" step="0.25" value={draft.increments[ex.id] || ""} onChange={e => change(d => ({ ...d, increments: { ...d.increments, [ex.id]: Number(e.target.value) } }))} /></label>
-            {(target.reps || target.duration_seconds) && <button className="fitai-secondary-button" disabled={locked} onClick={() => fill(ex)}>Use target values</button>}
-          </details>}
-          {ex.measurement === "legacy" && <p className="continuity-error">Original prescription: {ex.reps}. Clarify its measurement in a plan draft before logging this exercise.</p>}
-          <div className="actual-set-labels" aria-hidden="true"><span>Set</span><span>Actual kg</span><span>{ex.measurement === "duration" ? "Seconds" : "Reps"}</span><span>Done</span></div>
-          {draft.rows[ex.id].map((r, i) => <div className="actual-set" key={i}>
-            <span>{i + 1}</span><input aria-label={`${ex.name}, set ${i + 1}, kg${ex.load_basis === "per_hand" ? " per dumbbell" : ""}`} type="number" min="0" max="2000" step="any" inputMode="decimal" disabled={locked || r.done || ex.load_basis === "bodyweight"} value={r.weight} placeholder={ex.load_basis === "bodyweight" ? "—" : "kg"} onChange={e => updateRow(ex, i, row => ({ ...row, weight: e.target.value }))} />
-            <input aria-label={`${ex.name}, set ${i + 1}, ${ex.measurement === "duration" ? "seconds" : "repetitions"}`} type="number" min="1" step="1" inputMode="numeric" disabled={locked || r.done} value={ex.measurement === "duration" ? r.duration_seconds : r.reps} onChange={e => updateRow(ex, i, row => ({ ...row, [ex.measurement === "duration" ? "duration_seconds" : "reps"]: e.target.value }))} />
-            <button className="fitai-secondary-button" aria-label={`${r.done ? "Undo" : "Complete"} ${ex.name} set ${i + 1}`} aria-pressed={r.done} disabled={locked || ex.measurement === "legacy"} onClick={() => toggle(ex, i)}>{r.done ? "✓" : "Done"}</button>
-            <button className="text-link" aria-label={`Remove ${ex.name} set ${i + 1}`} disabled={locked} onClick={() => { setUndo(structuredClone(draft)); change(d => ({ ...d, rows: { ...d.rows, [ex.id]: d.rows[ex.id].filter((_, ri) => ri !== i) } })); }}>Remove</button>
-          </div>)}
-          <button className="add-set" disabled={locked || draft.rows[ex.id].length >= 100} onClick={() => change(d => ({ ...d, rows: { ...d.rows, [ex.id]: [...d.rows[ex.id], { weight: "", reps: "", duration_seconds: "", done: false }] } }))}>Add set</button>
-          <label className="session-note" htmlFor={`note-${ei}`}>Optional note (difficulty or target adjustment)<input id={`note-${ei}`} maxLength={2000} disabled={locked} value={draft.notes[ex.id] || ""} onChange={e => change(d => ({ ...d, notes: { ...d.notes, [ex.id]: e.target.value } }))} /></label>
+      {plan && plan.id !== draft.plan_id && <Notice tone="warn">This session uses an earlier plan version. Your entries stay with this workout.</Notice>}
+      <div className="logger-summary">
+        <p className="logger-count"><strong className="num">{count}</strong><span className="muted num">/{total}</span> <span>{count === 1 ? "completed set" : "completed sets"}. Copying a target never marks a set done.</span></p>
+        <div className="meter" aria-hidden="true"><span style={{ width: `${total ? (count / total) * 100 : 0}%` }} /></div>
+      </div>
+
+      <div className="exercise-stack">{draft.day.exercises.map((ex, ei) => { const last = history[ex.id]?.previous; const target = history[ex.id]?.target; const rows = draft.rows[ex.id]; const doneRows = rows.filter(r => r.done).length; const field = ex.measurement === "duration" ? "duration_seconds" : "reps"; return <article className="exercise card" key={ex.id} aria-labelledby={`exercise-${ei}`}>
+        <header className="exercise-head">
+          <ExerciseArtwork name={ex.name} className="exercise-thumb" />
+          <div className="exercise-head-copy">
+            <h2 id={`exercise-${ei}`} className="exercise-name">{ex.name}</h2>
+            <p className="exercise-dose">{prescription(ex).split(" · ").map(part => <span key={part}>{part}</span>)}<span>Load: {ex.load_basis.replace("_", " ")}</span></p>
+          </div>
+          <span className={`exercise-tally num${doneRows && doneRows === rows.length ? " is-complete" : ""}`} aria-label={`${doneRows} of ${rows.length} sets done`}>{doneRows}/{rows.length}</span>
+        </header>
+
+        <div className="exercise-ref">
+          <div className="exercise-last">
+            <p className="exercise-ref-label">Last time{last ? ` · ${last.date}` : ""}</p>
+            <p className="exercise-ref-value">{last ? formatSets(last.sets, ex.measurement) : "No comparable completed record yet."}</p>
+          </div>
+          {last && <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => fill(ex, true)}><IconCopy size={16} stroke={1.75} aria-hidden="true" />Use previous values</button>}
         </div>
-      </article>; })}
-      {undo && <button className="fitai-secondary-button" disabled={locked} onClick={() => { change(() => undo); setUndo(null); }}>Undo last row removal (restores previous entries)</button>}
-      <div className="workout-savebar"><p>{count} completed sets<span>Confirm entered rows before finishing.</span></p><button className="fitai-primary-button" disabled={busy || !count || !!storageError} onClick={finish}>{busy ? "Saving…" : draft.pending ? "Retry workout save" : "Finish workout"}</button></div>
-      {draft.pending ? <button className="text-link" disabled={busy} onClick={resolvePending}>Check save status before editing</button> : <><button className="text-link" disabled={locked} onClick={() => setConfirmDiscard(true)}>Discard this draft</button>{confirmDiscard && <div className="continuity-card"><p>Remove this device's unfinished workout and its entered sets?</p><button className="fitai-secondary-button" onClick={() => { persist(null).catch(() => {}); setConfirmDiscard(false); }}>Discard entered workout</button><button className="text-link" onClick={() => setConfirmDiscard(false)}>Keep training</button></div>}</>}
+
+        {target && <details className="target">
+          <summary><IconTarget size={18} stroke={1.75} aria-hidden="true" /><span>Next target{target.reps || target.duration_seconds ? <> · <span className="num">{formatSets([target], ex.measurement)}</span></> : " · Establish a baseline"}</span></summary>
+          <div className="target-body">
+            <p className="muted">{target.reason}</p>
+            <div className="target-actions">
+              <label className="field target-increment">
+                <span className="field-label">Optional available load increment (kg)</span>
+                <input className="input" disabled={locked} type="number" min="0" max="100" step="0.25" value={draft.increments[ex.id] || ""} onChange={e => change(d => ({ ...d, increments: { ...d.increments, [ex.id]: Number(e.target.value) } }))} />
+              </label>
+              {(target.reps || target.duration_seconds) && <button type="button" className="btn btn--secondary" disabled={locked} onClick={() => fill(ex)}>Use target values</button>}
+            </div>
+          </div>
+        </details>}
+
+        {ex.measurement === "legacy" && <Notice tone="warn">Original prescription: {ex.reps}. Clarify its measurement in a plan draft before logging this exercise.</Notice>}
+
+        <div className="sets">
+          <div className="set-row set-labels" aria-hidden="true"><span>Set</span><span>Actual kg</span><span>{ex.measurement === "duration" ? "Seconds" : "Reps"}</span><span>Done</span><span /></div>
+          {rows.map((r, i) => <div className={`set-row${r.done ? " is-done" : ""}`} data-set-row key={i}>
+            <span className="set-number num">{i + 1}</span>
+            <input className="input set-input" aria-label={`${ex.name}, set ${i + 1}, kg${ex.load_basis === "per_hand" ? " per dumbbell" : ""}`} type="number" min="0" max="2000" step="any" inputMode="decimal" disabled={locked || r.done || ex.load_basis === "bodyweight"} value={r.weight} placeholder={ex.load_basis === "bodyweight" ? "—" : "kg"} onChange={e => updateRow(ex, i, row => ({ ...row, weight: e.target.value }))} />
+            <input className="input set-input" aria-label={`${ex.name}, set ${i + 1}, ${ex.measurement === "duration" ? "seconds" : "repetitions"}`} type="number" min="1" step="1" inputMode="numeric" disabled={locked || r.done} value={r[field]} placeholder={ex.measurement === "duration" ? "s" : "reps"} onChange={e => updateRow(ex, i, row => ({ ...row, [field]: e.target.value }))} />
+            <button type="button" className="set-done" aria-label={`Complete ${ex.name} set ${i + 1}`} aria-pressed={r.done} disabled={locked || ex.measurement === "legacy"} onClick={() => toggle(ex, i)}><IconCheck size={20} stroke={2.25} aria-hidden="true" /></button>
+            <button type="button" className="icon-btn set-remove" aria-label={`Remove ${ex.name} set ${i + 1}`} title="Remove set" disabled={locked} onClick={() => { setUndo(structuredClone(draft)); change(d => ({ ...d, rows: { ...d.rows, [ex.id]: d.rows[ex.id].filter((_, ri) => ri !== i) } })); }}><IconX size={18} stroke={1.75} aria-hidden="true" /></button>
+          </div>)}
+        </div>
+        <button type="button" className="btn btn--quiet add-set" disabled={locked || rows.length >= 100} onClick={() => change(d => ({ ...d, rows: { ...d.rows, [ex.id]: [...d.rows[ex.id], { weight: "", reps: "", duration_seconds: "", done: false }] } }))}><IconPlus size={18} stroke={1.75} aria-hidden="true" />Add set</button>
+        <label className="field exercise-note" htmlFor={`note-${ei}`}>
+          <span className="field-label">Optional note <span className="optional">(difficulty or target adjustment)</span></span>
+          <input className="input" id={`note-${ei}`} maxLength={2000} disabled={locked} value={draft.notes[ex.id] || ""} onChange={e => change(d => ({ ...d, notes: { ...d.notes, [ex.id]: e.target.value } }))} />
+        </label>
+      </article>; })}</div>
+
+      {undo && <button type="button" className="btn btn--secondary undo-remove" disabled={locked} onClick={() => { change(() => undo); setUndo(null); }}><IconArrowBackUp size={18} stroke={1.75} aria-hidden="true" />Undo last row removal (restores previous entries)</button>}
+
+      <div className="action-bar finish-bar">
+        <p className="action-bar-text"><strong><span className="num">{count}</span> {count === 1 ? "completed set" : "completed sets"}</strong><span>Confirm entered rows before finishing.</span></p>
+        <button type="button" className="btn btn--primary" disabled={busy || !count || !!storageError} onClick={finish}>{busy ? <><span className="spinner" aria-hidden="true" />Saving…</> : draft.pending ? "Retry workout save" : "Finish workout"}</button>
+      </div>
+
+      <div className="logger-footer">
+        {draft.pending ? <button type="button" className="btn btn--ghost" disabled={busy} onClick={resolvePending}>Check save status before editing</button> : <>
+          {!confirmDiscard && <button type="button" className="btn btn--quiet" disabled={locked} onClick={() => setConfirmDiscard(true)}>Discard this draft</button>}
+          {confirmDiscard && <Notice tone="warn"><p>Remove this device's unfinished workout and its entered sets?</p><div className="row">
+            <button type="button" className="btn btn--danger btn--sm" onClick={() => { persist(null).catch(() => {}); setConfirmDiscard(false); }}>Discard entered workout</button>
+            <button type="button" className="btn btn--quiet btn--sm" onClick={() => setConfirmDiscard(false)}>Keep training</button>
+          </div></Notice>}
+        </>}
+      </div>
     </>}
   </Layout>;
 }

@@ -38,7 +38,9 @@
   border-radius: var(--r-sm);
   transition: background-color var(--t-fast);
 }
-.perf > summary:hover { background: var(--ink-1); }
+@media (hover: hover) and (pointer: fine) {
+  .perf > summary:hover { background: var(--ink-1); }
+}
 .perf > summary::-webkit-details-marker { display: none; }
 .perf > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2); rotate: 45deg; translate: 0 -2px; transition: rotate var(--t-med) var(--ease-out); }
 .perf[open] > summary::after { rotate: 225deg; translate: 0 2px; }

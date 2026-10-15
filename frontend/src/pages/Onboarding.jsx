@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { IconArrowLeft, IconArrowRight, IconCheck, IconLoader2 } from "@tabler/icons-react";
+import { IconArrowLeft, IconArrowRight, IconCheck, IconSparkles } from "@tabler/icons-react";
 import client from "../api/client";
 import Layout from "../components/Layout";
 import PageHeading from "../components/PageHeading";
 import InstallHelp from "../components/InstallHelp";
-import { Notice, LoadingLine } from "../components/ui";
+import { BackLink, Notice, LoadingLine } from "../components/ui";
 import { apiError } from "../utils/apiError";
 import { onboardingFormFromProfile, validateOnboardingStep } from "../utils/onboarding";
 
@@ -159,11 +159,11 @@ export default function Onboarding() {
   const selectedLabel = (options, value) => options.find((option) => option.value === value)?.label || "Not selected";
 
   return (
-    <Layout>
-      <Link to="/" className="workout-back"><IconArrowLeft size={16} aria-hidden="true" /> Back to your plan</Link>
-      <PageHeading eyebrow="Make it yours" title={hasSavedPreferences ? "Training preferences" : "Build your training plan"} description="A plan that fits your goals, schedule, and equipment." />
-      <Link to="/coach" className="text-link">Already have a routine? Improve it with Coach</Link>
-      <InstallHelp />
+    <Layout contentClassName="onboarding">
+      <BackLink to="/">Back to your plan</BackLink>
+      <PageHeading eyebrow="Make it yours" title={hasSavedPreferences ? "Training preferences" : "Build your training plan"} description="A plan that fits your goals, schedule, and equipment.">
+        <Link to="/coach" className="btn btn--quiet"><IconSparkles size={18} stroke={1.75} aria-hidden="true" />Already have a routine? Improve it with Coach</Link>
+      </PageHeading>
 
       {initLoading ? (
         <LoadingLine>Loading your preferences...</LoadingLine>
@@ -218,14 +218,14 @@ export default function Onboarding() {
                   <dl className="review-list">
                     {[["Goal", selectedLabel(GOALS, form.goal)], ["Experience", selectedLabel(LEVELS, form.level)], ["Schedule", `${form.days_per_week} days per week`], ["Equipment", selectedLabel(EQUIPMENT, form.equipment)], ["Age", `${form.age} years`], ["Weight", `${form.weight_kg} kg`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
                   </dl>
-                  <p className="text-sm text-text-muted leading-relaxed">Save your preferences alone, or create a plan draft to review. Your active routine changes only when you apply the reviewed draft.</p>
+                  <p className="muted small">Save your preferences alone, or create a plan draft to review. Your active routine changes only when you apply the reviewed draft.</p>
                 </div>
               )}
-              <div className="flex flex-wrap gap-3 justify-between mt-7">
-                {step > 0 && <button type="button" onClick={() => goToStep(step - 1)} className="fitai-secondary-button"><IconArrowLeft size={16} aria-hidden="true" /> Back</button>}
-                {step === 5 && <button type="button" className="fitai-secondary-button" disabled={loading} onClick={e => handleSubmit(e, true)}>Save preferences only</button>}
-                <button type="submit" className="fitai-primary-button ml-auto" disabled={loading}>
-                  {loading && <IconLoader2 className="animate-spin" size={16} aria-hidden="true" />}
+              <div className="onboarding-actions">
+                {step > 0 && <button type="button" onClick={() => goToStep(step - 1)} className="btn btn--secondary"><IconArrowLeft size={16} aria-hidden="true" /> Back</button>}
+                {step === 5 && <button type="button" className="btn btn--quiet" disabled={loading} onClick={e => handleSubmit(e, true)}>Save preferences only</button>}
+                <button type="submit" className="btn btn--primary onboarding-next" disabled={loading}>
+                  {loading && <span className="spinner" aria-hidden="true" />}
                   {phase === "saving" ? "Saving preferences..." : phase === "generating" ? "Generating plan..." : step < STEPS.length - 1 ? "Continue" : hasSavedPreferences ? "Generate new plan" : "Generate my plan"}
                   {!loading && step < STEPS.length - 1 && <IconArrowRight size={16} aria-hidden="true" />}
                 </button>

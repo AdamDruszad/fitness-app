@@ -1,5 +1,8 @@
 # FitAI: redesign content & feature inventory
 
+> This inventory records the pre-merge redesign. For the subsequent merge damage,
+> recovery branch and current verification, see [the recovery audit](frontend/docs/REDESIGN_RECOVERY.md).
+
 This is the contract for the redesign on branch `redesign`. Every row below existed in the
 frontend at `8692cdb` (branch `Repaired-components-an-design`) and must still exist and work
 after the redesign. The **After** column is filled in during verification (section 5 of the

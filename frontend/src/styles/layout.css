@@ -4,6 +4,7 @@
 .app-shell { min-height: 100dvh; display: flex; flex-direction: column; background: var(--ink-0); }
 
 .app-header {
+  padding-top: env(safe-area-inset-top);
   position: sticky;
   top: 0;
   z-index: var(--z-header);
@@ -41,7 +42,9 @@
   font-weight: 600;
   transition: color var(--t-fast);
 }
-.primary-nav a:hover { color: var(--text); }
+@media (hover: hover) and (pointer: fine) {
+  .primary-nav a:hover { color: var(--text); }
+}
 .primary-nav a::after {
   content: "";
   position: absolute;
@@ -60,6 +63,7 @@
 .tab-bar { display: none; }
 
 .page {
+  min-width: 0;
   width: min(100% - 2 * var(--gutter), var(--shell));
   margin-inline: auto;
   padding: var(--s-10) 0 var(--s-16);
