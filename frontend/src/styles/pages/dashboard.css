@@ -26,7 +26,6 @@
 /* Training week */
 .week-day .ledger-title { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 .week-day.is-today .ledger-index { color: var(--accent-text); }
-.week-day.is-today { box-shadow: inset 3px 0 0 var(--accent); }
 .today-tag { min-height: 20px; padding-block: 0; }
 
 /* At a glance */

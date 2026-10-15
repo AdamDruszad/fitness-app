@@ -107,7 +107,7 @@
 .markdown-body tr:last-child td { border-bottom: 0; }
 .markdown-body pre { overflow-x: auto; padding: var(--s-3); border-radius: var(--r-sm); background: var(--ink-2); margin-block: var(--s-3); font-size: var(--fs-sm); }
 .markdown-body code { font-size: 0.9em; }
-.markdown-body blockquote { border-left: 3px solid var(--accent); padding-left: var(--s-3); margin-block: var(--s-3); color: var(--text-2); }
+.markdown-body blockquote { padding: var(--s-2) var(--s-3); margin-block: var(--s-3); border-radius: var(--r-sm); background: var(--ink-2); color: var(--text-2); font-style: italic; }
 .markdown-body hr { border-color: var(--line); margin-block: var(--s-5); }
 .markdown-body img { max-width: 100%; height: auto; }
 

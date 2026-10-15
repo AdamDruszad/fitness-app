@@ -10,10 +10,10 @@
 .change-tag--changed { border-color: var(--warn-line); color: var(--warn); background: var(--warn-soft); }
 .change-tag--removed { border-color: var(--danger-line); color: var(--danger); background: var(--danger-soft); }
 .plan-changes { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
-.plan-change { padding: var(--s-3) 0 var(--s-3) var(--s-3); border-bottom: 1px solid var(--line); box-shadow: inset 2px 0 0 var(--line-strong); }
-.plan-change--added { box-shadow: inset 2px 0 0 var(--ok); }
-.plan-change--changed { box-shadow: inset 2px 0 0 var(--warn); }
-.plan-change--removed { box-shadow: inset 2px 0 0 var(--danger); }
+.plan-change { padding: var(--s-3) 0; border-bottom: 1px solid var(--line); }
+.plan-change--added .plan-change-label { color: var(--ok); }
+.plan-change--changed .plan-change-label { color: var(--warn); }
+.plan-change--removed .plan-change-label { color: var(--danger); }
 .plan-change-title { font-size: var(--fs-sm); font-weight: 650; }
 .plan-change-label { color: var(--text-2); font-weight: 600; }
 .plan-change-detail { margin-top: 2px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; font-variant-numeric: tabular-nums; }
@@ -64,7 +64,7 @@
 .set-chip { display: inline-flex; align-items: center; gap: var(--s-2); padding: 6px 12px 6px 6px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--ink-1); font-size: var(--fs-md); }
 .set-chip-index { display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--r-sm); background: var(--ink-3); color: var(--text-2); font-size: var(--fs-xs); }
 .session-target { max-width: 520px; }
-.session-note { padding: var(--s-3) var(--s-4); border-left: 3px solid var(--accent); background: var(--ink-1); border-radius: 0 var(--r-md) var(--r-md) 0; font-size: var(--fs-sm); }
+.session-note { padding: var(--s-3) var(--s-4); border: 1px solid var(--line); background: var(--ink-1); border-radius: var(--r-md); color: var(--text-2); font-size: var(--fs-sm); font-style: italic; }
 .correction-rows { display: grid; gap: var(--s-3); }
 .correction-row { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: var(--s-3); }
 
