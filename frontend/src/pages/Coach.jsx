@@ -50,10 +50,13 @@ export default function Coach() {
    * Auto-scrolls to the bottom of the chat container when messages update.
    */
   useEffect(() => {
-    if (followMessagesRef.current) {
-      bottomRef.current?.scrollIntoView({
+    // Scroll only the conversation log. scrollIntoView would also scroll the page wherever the
+    // log extends below the fold (tablets and phones), hiding the page title on arrival.
+    const log = bottomRef.current?.parentElement;
+    if (followMessagesRef.current && log) {
+      log.scrollTo({
+        top: log.scrollHeight,
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-        block: "nearest",
       });
     }
   }, [messages]);
