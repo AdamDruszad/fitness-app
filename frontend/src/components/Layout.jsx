@@ -5,50 +5,38 @@ import Brand from "./Brand";
 import ThemeToggle from "./ThemeToggle";
 import { useEffect } from "react";
 
-// `section` lists deeper paths that belong to a tab, so it stays highlighted there.
 const NAV_ITEMS = [
-  { to: "/", icon: IconLayoutDashboard, label: "Your plan", section: ["/plans/"] },
-  { to: "/log", icon: IconBarbell, label: "Workout", section: [] },
-  { to: "/coach", icon: IconMessageChatbot, label: "Coach", section: [] },
-  { to: "/progress", icon: IconChartLine, label: "Progress", section: ["/sessions/"] },
+  { to: "/", icon: IconLayoutDashboard, label: "Your plan" },
+  { to: "/log", icon: IconBarbell, label: "Workout" },
+  { to: "/coach", icon: IconMessageChatbot, label: "Coach" },
+  { to: "/progress", icon: IconChartLine, label: "Progress" },
 ];
 
-/**
- * App shell for signed-in pages.
- * width: "wide" (default, 1120px) or "narrow" (760px reading column).
- */
-export default function Layout({ children, contentClassName = "", width = "wide" }) {
+export default function Layout({ children, contentClassName = "" }) {
   const { logout } = useAuth();
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
     document.getElementById("main-content")?.focus({ preventScroll: true });
   }, [pathname]);
-  const navigation = NAV_ITEMS.map(({ to, icon: Icon, label, section }) => {
-    const exact = pathname === to;
-    const inSection = exact || section.some(prefix => pathname.startsWith(prefix));
-    return (
-      <Link key={to} to={to} className={inSection ? "is-active" : undefined} aria-current={exact ? "page" : inSection ? "true" : undefined}>
-        <Icon size={20} stroke={1.75} aria-hidden="true" /><span>{label}</span>
-      </Link>
-    );
-  });
+  const navigation = NAV_ITEMS.map(({ to, icon: Icon, label }) => <Link key={to} to={to} className={pathname === to ? "is-active" : ""} aria-current={pathname === to ? "page" : undefined}><Icon size={20} stroke={1.7} aria-hidden="true" /><span>{label}</span></Link>);
   return (
-    <div className="app-shell">
+    <div className="fitai-shell">
       <a className="skip-link" href="#main-content">Skip to content</a>
-      <header className="app-header">
-        <div className="shell app-header-inner">
+      <header className="fitai-header">
+        <div className="fitai-header-inner">
           <Brand />
-          <nav className="primary-nav" aria-label="Main navigation">{navigation}</nav>
+          <nav className="desktop-nav" aria-label="Main navigation">{navigation}</nav>
           <div className="header-actions">
             <ThemeToggle />
-            <Link to="/onboarding" className="icon-btn" aria-label="Training preferences" title="Training preferences"><IconSettings size={20} stroke={1.75} aria-hidden="true" /></Link>
-            <button type="button" onClick={logout} className="icon-btn" aria-label="Sign out" title="Sign out"><IconLogout size={20} stroke={1.75} aria-hidden="true" /></button>
+            <Link to="/onboarding" className="icon-button" aria-label="Training preferences" title="Training preferences"><IconSettings size={19} aria-hidden="true" /></Link>
+            <button type="button" onClick={logout} className="icon-button" aria-label="Sign out" title="Sign out"><IconLogout size={19} aria-hidden="true" /></button>
           </div>
         </div>
       </header>
-      <main id="main-content" tabIndex={-1} className={`page${width === "narrow" ? " page--narrow" : ""} ${contentClassName}`.trim()}>{children}</main>
-      <nav className="tab-bar" aria-label="Mobile navigation">{navigation}</nav>
+      <main id="main-content" tabIndex={-1} className={`fitai-content ${contentClassName}`}>{children}</main>
+      <nav className="mobile-nav" aria-label="Mobile navigation">{navigation}</nav>
     </div>
   );
 }
+
