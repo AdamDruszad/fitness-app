@@ -1,0 +1,128 @@
+/* AI Coach */
+.coach .page-head { margin-bottom: var(--s-6); }
+.coach-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-8); align-items: start; }
+.coach-chat { display: grid; gap: var(--s-3); min-width: 0; }
+.coach-side { display: grid; gap: var(--s-4); position: sticky; top: calc(var(--header-h) + var(--s-6)); }
+
+.coach-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  height: clamp(420px, 100dvh - 360px, 780px);
+  overflow-y: auto;
+  padding: var(--s-6);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--ink-1);
+  scroll-padding-block: var(--s-5);
+  overscroll-behavior: contain;
+}
+.coach-earlier { align-self: center; }
+.coach-placeholder { flex: 1; display: grid; place-items: center; align-content: center; gap: var(--s-4); text-align: center; color: var(--text-2); }
+.coach-empty p { max-width: 34ch; }
+.coach-load-error { color: var(--danger); font-size: var(--fs-sm); }
+.spinner-icon { animation: fitai-spin 0.8s linear infinite; color: var(--accent-text); }
+
+.coach-message { display: flex; align-items: flex-start; gap: var(--s-3); }
+.coach-message--user { flex-direction: row-reverse; }
+.coach-avatar, .coach-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--r-md);
+}
+.coach-avatar { background: var(--accent-soft); color: var(--accent-text); }
+.coach-mark { border: 1px solid var(--line-strong); background: var(--ink-2); }
+.coach-mark .bar { width: 5px; height: 15px; }
+.coach-mark--lg { width: 56px; height: 56px; border-radius: var(--r-lg); }
+.coach-mark--lg .bar { width: 9px; height: 28px; }
+
+.coach-bubble { min-width: 0; max-width: min(100% - 42px, 68ch); font-size: var(--fs-md); line-height: 1.6; overflow-wrap: anywhere; }
+.coach-message--user .coach-bubble {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-lg) var(--r-sm) var(--r-lg) var(--r-lg);
+  background: var(--accent-strong);
+  color: #fff;
+  white-space: pre-wrap;
+}
+.coach-message--coach .coach-bubble { padding-top: 3px; color: var(--text); }
+.coach-incomplete { margin-top: var(--s-2); color: var(--danger); font-size: var(--fs-sm); }
+.coach-to-plan { margin-top: var(--s-3); }
+.coach-caret { display: inline-block; width: 7px; height: 1.05em; margin-left: 2px; vertical-align: text-bottom; background: var(--accent); border-radius: 1px; animation: fitai-pulse 1s ease-in-out infinite; }
+
+.coach-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--ink-2);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.coach-composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.coach-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--target);
+  max-height: 220px;
+  padding: 10px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  resize: none;
+  overflow-y: auto;
+}
+.coach-input:focus { outline: none; }
+.coach-input::placeholder { color: var(--text-3); }
+.coach-input:disabled { opacity: 0.6; }
+.coach-send { width: var(--target); padding: 0; flex: none; }
+.coach-hint { display: flex; justify-content: space-between; gap: var(--s-3); color: var(--text-2); font-size: var(--fs-xs); padding-inline: var(--s-2); }
+.coach-error { margin-top: 0; }
+
+.coach-routine .textarea { min-height: 160px; }
+.coach-drafts .ledger-row { min-height: 56px; }
+.coach-drafts .ledger-title { font-size: var(--fs-sm); }
+.coach-note { color: var(--text-2); font-size: var(--fs-sm); line-height: 1.55; }
+
+/* Markdown from the coach */
+.coach-table { max-width: 100%; overflow-x: auto; margin-block: var(--s-4); border: 1px solid var(--line); border-radius: var(--r-md); scrollbar-width: thin; }
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body p { margin-bottom: 0.65rem; }
+.markdown-body p:last-child { margin-bottom: 0; }
+.markdown-body ul { list-style: disc; padding-left: 1.4rem; margin-block: 0.5rem; }
+.markdown-body ol { list-style: decimal; padding-left: 1.4rem; margin-block: 0.5rem; }
+.markdown-body li { margin-block: 0.25rem; }
+.markdown-body li::marker { color: var(--accent-text); }
+.markdown-body strong { font-weight: 700; }
+.markdown-body :is(h1, h2, h3, h4) { font-size: var(--fs-lg); font-weight: 750; line-height: 1.4; margin: 1.1rem 0 0.4rem; }
+.markdown-body a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
+.markdown-body table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.markdown-body th, .markdown-body td { padding: 10px 12px; border-bottom: 1px solid var(--line); min-width: 96px; text-align: left; }
+.markdown-body th { background: var(--ink-2); font-weight: 700; }
+.markdown-body tr:last-child td { border-bottom: 0; }
+.markdown-body pre { overflow-x: auto; padding: var(--s-3); border-radius: var(--r-sm); background: var(--ink-2); margin-block: var(--s-3); font-size: var(--fs-sm); }
+.markdown-body code { font-size: 0.9em; }
+.markdown-body blockquote { padding: var(--s-2) var(--s-3); margin-block: var(--s-3); border-radius: var(--r-sm); background: var(--ink-2); color: var(--text-2); font-style: italic; }
+.markdown-body hr { border-color: var(--line); margin-block: var(--s-5); }
+.markdown-body img { max-width: 100%; height: auto; }
+
+@media (max-width: 1023px) {
+  .coach-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .coach-side { position: static; order: -1; }
+  .coach-note { order: 3; }
+}
+@media (max-width: 767px) {
+  .coach .page-head { margin-bottom: var(--s-4); gap: var(--s-2); }
+  .coach .page-title { font-size: var(--fs-2xl); }
+  .coach-log { height: clamp(360px, 100dvh - 330px, 640px); padding: var(--s-4); gap: var(--s-5); }
+  .coach-hint-keys { display: none; }
+  .coach-bubble { font-size: var(--fs-md); }
+}
+@media (pointer: coarse) {
+  .coach-hint-keys { display: none; }
+}

@@ -1,0 +1,59 @@
+/* Log in / Create account */
+.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--ink-0); }
+
+.auth-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--s-10);
+  padding: var(--s-10) clamp(32px, 5vw, 72px);
+  border-right: 1px solid var(--line);
+  background-color: var(--ink-1);
+  background-image: radial-gradient(120% 80% at 0% 100%, var(--accent-soft), transparent 60%), var(--knurl);
+  overflow: hidden;
+}
+.auth-panel::after {
+  /* The plate bar, scaled up as a quiet backdrop */
+  content: "";
+  position: absolute;
+  right: -6%;
+  top: 14%;
+  width: 22%;
+  height: 72%;
+  background: var(--accent);
+  opacity: 0.08;
+  transform: skewX(-14deg);
+  pointer-events: none;
+}
+.auth-promise { display: grid; gap: var(--s-4); margin: 0; padding: 0; list-style: none; position: relative; z-index: 1; }
+.auth-promise li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  font-size: clamp(2rem, 1.2rem + 2.4vw, 3.4rem);
+  font-weight: 800;
+  font-stretch: var(--stretch-display);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.auth-promise .num { color: var(--accent-text); font-size: var(--fs-lg); min-width: 2.2ch; }
+.auth-caption { color: var(--text-2); font-size: var(--fs-md); position: relative; z-index: 1; }
+
+.auth-main { display: flex; flex-direction: column; padding: var(--s-6) var(--gutter) var(--s-10); }
+.auth-topbar { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); }
+.auth-mobile-brand { display: none; margin-right: auto; }
+.auth-card { width: min(100%, 400px); margin: auto; display: grid; gap: var(--s-5); padding-block: var(--s-8); }
+.auth-title { font-size: var(--fs-h1); }
+.auth-intro { margin-top: calc(var(--s-3) * -1); font-size: var(--fs-md); }
+.auth-form { display: grid; gap: var(--s-4); }
+.auth-form .btn { margin-top: var(--s-2); }
+.auth-footer { color: var(--text-2); font-size: var(--fs-sm); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+
+@media (max-width: 899px) {
+  .auth { grid-template-columns: minmax(0, 1fr); }
+  .auth-panel { display: none; }
+  .auth-mobile-brand { display: inline-flex; }
+  .auth-main { padding-top: var(--s-3); }
+  .auth-card { margin-top: var(--s-8); padding-block: var(--s-4); }
+}

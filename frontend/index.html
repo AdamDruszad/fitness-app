@@ -10,6 +10,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="FitAI — Your personal AI-powered fitness coach. Get custom workout plans, log sessions, track progress, and chat with your AI coach." />
     <title>FitAI — AI Fitness Coach</title>
+    <meta name="description" content="FitAI — Your personal AI-powered fitness coach. Get custom workout plans, log sessions, track progress, and chat with your AI coach." />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#121110" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="FitAI" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FitAI" />
+    <meta property="og:title" content="FitAI — AI Fitness Coach" />
+    <meta property="og:description" content="Improve your routine, record your training, and see what to attempt next." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="FitAI — AI Fitness Coach" />
+    <meta name="twitter:description" content="Improve your routine, record your training, and see what to attempt next." />
+    <script>
+      // Apply the saved or system theme before first paint (mirrors ThemeContext).
+      try {
+        var saved = localStorage.getItem("theme");
+        var light = saved ? saved === "light" : matchMedia("(prefers-color-scheme: light)").matches;
+        if (light) {
+          document.documentElement.classList.add("light");
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f2eb");
+        }
+      } catch (e) { /* Dark theme is the default. */ }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,35 +1,44 @@
 /**
  * @file ThemeContext.jsx
  * @description React Context Provider managing application-wide dark/light theme switching.
- * Persists the user's theme preference in localStorage and toggles the '.light' CSS class
- * on document.documentElement for Tailwind CSS / custom CSS variable styling.
+ * A saved choice in localStorage wins; otherwise the system preference decides. The '.light'
+ * class on document.documentElement switches the CSS tokens (see styles/tokens.css), and an
+ * inline script in index.html applies the same rule before first paint to avoid a flash.
  */
 
 import { useState, useEffect } from "react";
 import { ThemeContext } from "./theme";
 
+const THEME_COLORS = { dark: "#121110", light: "#f6f2eb" };
+
+function initialTheme() {
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch { /* Fall back to the system preference. */ }
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
 /**
  * ThemeProvider component wrapping application root.
- * 
+ *
  * @param {Object} props
  * @param {React.ReactNode} props.children - Child components receiving theme context.
  */
 export function ThemeProvider({ children }) {
-  // Read initial theme preference from localStorage, default to "dark"
-  const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem("theme") === "light" ? "light" : "dark"; }
-    catch { return "dark"; }
-  });
+  const [theme, setTheme] = useState(initialTheme);
 
-  // Synchronize CSS class on <html> element and persist in localStorage
+  // Synchronize the CSS class and the browser chrome colour with the active theme
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
-    try { localStorage.setItem("theme", theme); } catch { /* Theme works without storage. */ }
+    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.setAttribute("content", THEME_COLORS[theme]));
   }, [theme]);
 
-  // Toggle between dark and light themes
+  // Toggle between dark and light themes; only an explicit choice is remembered
   const toggleTheme = () => {
-    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    try { localStorage.setItem("theme", next); } catch { /* Theme works without storage. */ }
   };
 
   return (
