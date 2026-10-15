@@ -1,3 +1,11 @@
+/*
+ * FitAI styles. Layers, in order:
+ *   tokens     colours, type, space, radii, motion (+ Tailwind @theme bridge)
+ *   base       element defaults
+ *   components reusable classes (buttons, fields, notices, ledger, stats, disclosure…)
+ *   layout     app shell, navigation, page container and heading
+ *   pages/*    page-specific layout only
+ */
 @import "tailwindcss";
 
 .continuity-card { border: 1px solid var(--color-border-subtle); border-radius: 14px; padding: 20px; margin-block: 16px; background: var(--color-surface); }

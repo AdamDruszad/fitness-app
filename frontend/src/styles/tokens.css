@@ -1,0 +1,138 @@
+/*
+ * FitAI design tokens: "Iron & chalk logbook".
+ * One warm neutral family (ink → chalk), one accent (terracotta), state colours only for
+ * meaning (done/saved, error, warning). Dark is the default; `.light` on <html> switches.
+ * Contrast (WCAG 2.x) was checked for every text token on every surface it is used on:
+ * --text-2 ≥ 6.2:1 and --text-3 ≥ 4.8:1 on ink-0..2, white on --accent-strong 5.3:1.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Neutrals: warm iron */
+  --ink-0: #121110; /* page */
+  --ink-1: #1b1917; /* surface */
+  --ink-2: #24211e; /* raised, inputs */
+  --ink-3: #2e2a27; /* hover, pressed */
+  --line: rgb(255 236 222 / 0.09);
+  --line-strong: rgb(255 236 222 / 0.17);
+  --text: #f4efe9;
+  --text-2: #b3aaa1;
+  --text-3: #968c83;
+
+  /* Accent: terracotta */
+  --accent: #e2673b;          /* bars, borders, icons */
+  --accent-text: #f2956d;     /* accent text and links */
+  --accent-strong: #b8461f;   /* filled buttons (white text 5.3:1) */
+  --accent-strong-hover: #a53c18;
+  --accent-soft: rgb(226 103 59 / 0.13);
+  --accent-line: rgb(226 103 59 / 0.42);
+
+  /* States */
+  --ok: #8cc29e;
+  --ok-soft: rgb(140 194 158 / 0.13);
+  --ok-line: rgb(140 194 158 / 0.4);
+  --on-ok: #10140f;
+  --danger: #f4927e;
+  --danger-soft: rgb(244 146 126 / 0.1);
+  --danger-line: rgb(244 146 126 / 0.4);
+  --warn: #e9bd6a;
+  --warn-soft: rgb(233 189 106 / 0.1);
+  --warn-line: rgb(233 189 106 / 0.38);
+
+  /* Texture: barbell knurling */
+  --knurl-ink: rgb(255 236 222 / 0.045);
+  --knurl: repeating-linear-gradient(45deg, var(--knurl-ink) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(-45deg, var(--knurl-ink) 0 1px, transparent 1px 8px);
+
+  /* Elevation (tinted to the warm ground) */
+  --shadow-1: 0 1px 0 rgb(255 236 222 / 0.03) inset, 0 1px 2px rgb(8 5 3 / 0.4);
+  --shadow-2: 0 1px 0 rgb(255 236 222 / 0.04) inset, 0 18px 40px -18px rgb(8 5 3 / 0.75);
+
+  /* Type */
+  --font-sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --stretch-display: 72%;
+  --stretch-num: 80%;
+  --fs-xs: 0.75rem;   /* 12 */
+  --fs-sm: 0.875rem;  /* 14 */
+  --fs-md: 1rem;      /* 16 */
+  --fs-lg: 1.125rem;  /* 18 */
+  --fs-xl: 1.375rem;  /* 22 */
+  --fs-2xl: 1.75rem;  /* 28 */
+  --fs-h1: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
+  --fs-hero: clamp(2.6rem, 1.8rem + 3.4vw, 4.25rem);
+
+  /* Space (4px scale), radii, layout */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --shell: 1120px;
+  --reading: 760px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --header-h: 64px;
+  --tabbar-h: 64px;
+  --target: 44px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 140ms;
+  --t-med: 220ms;
+
+  /* Layers */
+  --z-bar: 20;
+  --z-header: 25;
+  --z-tabbar: 30;
+  --z-skip: 100;
+}
+
+.light {
+  color-scheme: light;
+  --ink-0: #f6f2eb;
+  --ink-1: #fffdf9;
+  --ink-2: #eee8df;
+  --ink-3: #e6dfd4;
+  --line: rgb(52 36 22 / 0.12);
+  --line-strong: rgb(52 36 22 / 0.22);
+  --text: #1d1a17;
+  --text-2: #5c544d;
+  --text-3: #6e655d;
+
+  --accent: #c4512a;
+  --accent-text: #a3401c;
+  --accent-strong: #b8461f;
+  --accent-strong-hover: #a53c18;
+  --accent-soft: rgb(196 81 42 / 0.1);
+  --accent-line: rgb(196 81 42 / 0.4);
+
+  --ok: #2e7347;
+  --ok-soft: rgb(46 115 71 / 0.1);
+  --ok-line: rgb(46 115 71 / 0.38);
+  --on-ok: #ffffff;
+  --danger: #b42318;
+  --danger-soft: rgb(180 35 24 / 0.07);
+  --danger-line: rgb(180 35 24 / 0.35);
+  --warn: #86560a;
+  --warn-soft: rgb(134 86 10 / 0.08);
+  --warn-line: rgb(134 86 10 / 0.35);
+
+  --knurl-ink: rgb(70 45 25 / 0.06);
+  --shadow-1: 0 1px 2px rgb(60 40 20 / 0.08);
+  --shadow-2: 0 18px 40px -20px rgb(60 40 20 / 0.28);
+}
+
+/* Tailwind utilities read the same tokens (e.g. `text-text-2`, `bg-ink-1`). */
+@theme {
+  --font-sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-ink-0: var(--ink-0);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+}

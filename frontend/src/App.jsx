@@ -3,15 +3,10 @@
  * @description Main application router component.
  * Configures client-side routing with React Router, wraps routes in an ErrorBoundary,
  * verifies authentication status via useAuth, and protects authenticated routes.
+ * Every page is code-split so the sign-in screen does not download the signed-in app.
  */
 
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router";
-import { useAuth } from "./hooks/useAuth";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Onboarding from "./pages/Onboarding";
-import Dashboard from "./pages/Dashboard";
-import WorkoutLogger from "./pages/WorkoutLogger";
 import { lazy, Suspense, useEffect } from "react";
 import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
@@ -19,6 +14,17 @@ import PlanReview from "./pages/PlanReview";
 import PlanHistory from "./pages/PlanHistory";
 import SessionDetail from "./pages/SessionDetail";
 import { ErrorBoundary } from "./ErrorBoundary";
+
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const WorkoutLogger = lazy(() => import("./pages/WorkoutLogger"));
+const Progress = lazy(() => import("./pages/Progress"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PlanReview = lazy(() => import("./pages/PlanReview"));
+const PlanHistory = lazy(() => import("./pages/PlanHistory"));
+const SessionDetail = lazy(() => import("./pages/SessionDetail"));
 const Coach = lazy(() => import("./pages/Coach"));
 
 // Browser titles for every real route; unknown paths fall back to the 404 title.
@@ -41,6 +47,18 @@ function DocumentTitle() {
   return null;
 }
 
+/** Full-screen state used before routes render (session check, lazy page loads). */
+function StateScreen({ children, busy = false }) {
+  return (
+    <div className="center-state">
+      <div className="center-panel">
+        <span className="brand" aria-hidden="true"><span className="bar" /><span>FitAI</span></span>
+        {busy ? <p className="loading-line" role="status"><span className="spinner" aria-hidden="true" />{children}</p> : children}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Root Application Component
  */
@@ -49,8 +67,18 @@ export default function App() {
   const protectedPage = page => user ? <div key={user.id}>{page}</div> : <Navigate to="/login" replace />;
 
   // Defer rendering routes until initial token validation check finishes
-  if (loading) return <div className="workout-empty" role="status"><p>Opening your training space…</p></div>;
-  if (error) return <div className="workout-empty"><h1>Let's reconnect.</h1><p role="alert">{error}</p><button type="button" className="fitai-primary-button" onClick={refetchUser}>Try again</button><button type="button" className="fitai-secondary-button" onClick={logout}>Return to login</button></div>;
+  if (loading) return <StateScreen busy>Opening your training space…</StateScreen>;
+  if (error) return (
+    <StateScreen>
+      <IconWifiOff size={32} stroke={1.5} className="text-accent-text" aria-hidden="true" />
+      <h1 className="display state-title">Let's reconnect.</h1>
+      <p role="alert" className="muted">{error}</p>
+      <div className="row">
+        <button type="button" className="btn btn--primary" onClick={refetchUser}>Try again</button>
+        <button type="button" className="btn btn--secondary" onClick={logout}>Return to login</button>
+      </div>
+    </StateScreen>
+  );
 
   return (
     <ErrorBoundary>
@@ -86,9 +114,10 @@ export default function App() {
             element={protectedPage(<Progress />)}
           />
 
-          {/* 404 Catch-All Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 Catch-All Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ErrorBoundary>
   );
