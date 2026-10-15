@@ -8,11 +8,8 @@
 
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router";
 import { lazy, Suspense, useEffect } from "react";
-import Progress from "./pages/Progress";
-import NotFound from "./pages/NotFound";
-import PlanReview from "./pages/PlanReview";
-import PlanHistory from "./pages/PlanHistory";
-import SessionDetail from "./pages/SessionDetail";
+import { IconWifiOff } from "@tabler/icons-react";
+import { useAuth } from "./hooks/useAuth";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const Login = lazy(() => import("./pages/Login"));
@@ -84,35 +81,36 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <DocumentTitle />
-        <Routes>
-          <Route path="/plans/proposals/:id" element={protectedPage(<PlanReview />)} />
-          <Route path="/plans/history" element={protectedPage(<PlanHistory />)} />
-          <Route path="/sessions/:id" element={protectedPage(<SessionDetail />)} />
-          {/* Public Authentication Routes: signed-in users go to their plan or profile setup */}
-          <Route path="/login" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Login />} />
-          <Route path="/register" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Register />} />
+        <Suspense fallback={<StateScreen busy>Opening your training space…</StateScreen>}>
+          <Routes>
+            <Route path="/plans/proposals/:id" element={protectedPage(<PlanReview />)} />
+            <Route path="/plans/history" element={protectedPage(<PlanHistory />)} />
+            <Route path="/sessions/:id" element={protectedPage(<SessionDetail />)} />
+            {/* Public Authentication Routes: signed-in users go to their plan or profile setup */}
+            <Route path="/login" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Login />} />
+            <Route path="/register" element={user ? <Navigate to={user.goal ? "/" : "/onboarding"} replace /> : <Register />} />
 
-          {/* Protected Routes (require authenticated user session) */}
-          <Route
-            path="/onboarding"
-            element={protectedPage(<Onboarding />)}
-          />
-          <Route
-            path="/"
-            element={protectedPage(<Dashboard />)}
-          />
-          <Route
-            path="/log"
-            element={protectedPage(<WorkoutLogger />)}
-          />
-          <Route
-            path="/coach"
-            element={user ? <Suspense fallback={<div className="workout-empty" role="status">Opening your coach…</div>}><Coach /></Suspense> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/progress"
-            element={protectedPage(<Progress />)}
-          />
+            {/* Protected Routes (require authenticated user session) */}
+            <Route
+              path="/onboarding"
+              element={protectedPage(<Onboarding />)}
+            />
+            <Route
+              path="/"
+              element={protectedPage(<Dashboard />)}
+            />
+            <Route
+              path="/log"
+              element={protectedPage(<WorkoutLogger />)}
+            />
+            <Route
+              path="/coach"
+              element={user ? <Suspense fallback={<div className="workout-empty" role="status">Opening your coach…</div>}><Coach /></Suspense> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/progress"
+              element={protectedPage(<Progress />)}
+            />
 
             {/* 404 Catch-All Route */}
             <Route path="*" element={<NotFound />} />

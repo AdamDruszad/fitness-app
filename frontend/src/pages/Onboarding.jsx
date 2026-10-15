@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { IconArrowLeft, IconArrowRight, IconCheck, IconSparkles } from "@tabler/icons-react";
+import { IconArrowLeft, IconArrowRight, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import client from "../api/client";
 import Layout from "../components/Layout";
 import PageHeading from "../components/PageHeading";
 import InstallHelp from "../components/InstallHelp";
+import { Notice, LoadingLine } from "../components/ui";
 import { apiError } from "../utils/apiError";
 import { onboardingFormFromProfile, validateOnboardingStep } from "../utils/onboarding";
 

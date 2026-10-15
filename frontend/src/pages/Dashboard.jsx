@@ -3,11 +3,16 @@ import PageHeading from '../components/PageHeading';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import client from '../api/client';
-import { IconFlame, IconBarbell, IconChevronRight, IconCalendar, IconPlayerPlayFilled, IconArrowUpRight } from '@tabler/icons-react';
+import { IconFlame, IconBarbell, IconChevronRight, IconPlayerPlayFilled, IconArrowUpRight } from '@tabler/icons-react';
 import { getNextTrainingDay } from '../utils/workout';
 import { loadDraft } from '../utils/drafts';
 import { useAuth } from '../hooks/useAuth';
+import { countLabel } from '../utils/format';
+import { Notice, LoadingLine } from '../components/ui';
 import InstallHelp from '../components/InstallHelp';
+
+const shortDate = date => new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+const dose = exercise => exercise.measurement === 'duration' ? `${exercise.sets} × ${exercise.duration_seconds} s` : `${exercise.sets} × ${exercise.reps}`;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -51,6 +56,7 @@ export default function Dashboard() {
   const completed = sessions.filter(s => s.status === 'completed');
   const recentCount = sessionsLoading || sessionsError ? '—' : completed.length;
   const weekCount = summary?.week_completed ?? '—';
+  const retry = () => setReload(value => value + 1);
 
   return <Layout contentClassName="dashboard-content">
     <PageHeading eyebrow="Your training space" title="Your plan" description="One session at a time. Make today count." />
@@ -90,7 +96,7 @@ export default function Dashboard() {
         </div>
         <aside className="dashboard-secondary" aria-label="Training activity">
           <section className="training-overview" aria-labelledby="overview-heading">
-            <div className="section-heading"><h2 id="overview-heading">At a glance</h2><IconChartMark aria-hidden="true" /></div>
+            <div className="section-heading"><h2 id="overview-heading">At a glance</h2></div>
             <div className="overview-stats"><div><strong>{plan?.plan_data?.weeks || 8}<small>weeks</small></strong><span>Intended length</span></div><div><strong>{weekCount}</strong><span>Completed this week</span></div></div>
             <p>{recentCount} recent sessions loaded</p>
             <Link to="/progress" className="text-link">Explore your progress<IconArrowUpRight size={16} aria-hidden="true" /></Link>
