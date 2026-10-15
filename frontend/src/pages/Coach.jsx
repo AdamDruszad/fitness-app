@@ -10,7 +10,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import client from "../api/client";
 import Layout from "../components/Layout";
-import { IconSend2, IconUser, IconLoader2, IconSparkles, IconFileText, IconChevronRight, IconHistory } from "@tabler/icons-react";
+import { IconSend2, IconUser, IconLoader2, IconSparkles, IconFileText, IconChevronRight } from "@tabler/icons-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeading from "../components/PageHeading";
@@ -260,6 +260,14 @@ export default function Coach() {
       navigate(`/plans/proposals/${data.id}`);
     } catch (e) { setError(apiError(e)); } finally { setProposing(false); }
   }
+
+  // Return focus to the composer once a reply finishes. The textarea is disabled while
+  // streaming, so focusing it in handleSend's finally block can run too early.
+  const wasStreaming = useRef(false);
+  useEffect(() => {
+    if (wasStreaming.current && !streaming) inputRef.current?.focus();
+    wasStreaming.current = streaming;
+  }, [streaming]);
 
   // Grow the composer with its content, up to the CSS max-height.
   useLayoutEffect(() => {
