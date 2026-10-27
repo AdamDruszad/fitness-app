@@ -131,9 +131,10 @@ fitness-app/
 │   │   │   └── chat.py       # Chat input & message schemas
 │   │   ├── services/         # Business logic & third-party integrations
 │   │   │   ├── auth.py       # Argon2 password hashing & JWT token encode/decode
+│   │   │   ├── demo.py       # Guest accounts with a sample plan & history
 │   │   │   └── ai.py         # Claude prompt templates, streaming, plan generation
 │   │   └── routers/          # API route definitions
-│   │       ├── auth.py       # /auth/register, /auth/login
+│   │       ├── auth.py       # /auth/register, /auth/login, /auth/guest
 │   │       ├── users.py      # /users/me (GET, PUT)
 │   │       ├── plans.py      # /plans/generate, /plans/current, /plans/
 │   │       ├── sessions.py   # /sessions (CRUD), /sessions/{id}/logs
@@ -143,6 +144,7 @@ fitness-app/
 │   └── tests/                # Pytest test suite
 │       ├── conftest.py       # Database fixtures & test lifecycle cleanup
 │       ├── test_auth.py      # Auth endpoint tests
+│       ├── test_guest.py     # Demo guest account tests
 │       ├── test_plans.py     # Plan generation tests (mocked AI)
 │       ├── test_sessions.py  # Session & exercise logging tests
 │       └── test_users.py     # Profile retrieval & update tests
@@ -298,6 +300,7 @@ Interactive Swagger documentation is automatically hosted by FastAPI at:
 | :--- | :---: | :--- | :--- | :---: |
 | **Auth** | `POST` | `/auth/register` | Register a new user account | No |
 | **Auth** | `POST` | `/auth/login` | Authenticate user & return JWT token | No |
+| **Auth** | `POST` | `/auth/guest` | Open a private demo account with sample data (rate-limited) | No |
 | **Users** | `GET` | `/users/me` | Fetch authenticated user's profile | **Yes** |
 | **Users** | `PUT` | `/users/me` | Update biometrics & fitness preferences | **Yes** |
 | **Plans** | `POST` | `/plans/generate` | Generate AI workout routine (rate-limited 2m) | **Yes** |

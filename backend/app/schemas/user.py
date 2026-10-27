@@ -78,6 +78,7 @@ class UserResponse(BaseModel):
     weekly_session_goal: Optional[int] = None
     equipment: Optional[str] = None
     injuries: Optional[str] = None
+    is_guest: bool = False
 
     # Enable ORM mode to serialize directly from SQLAlchemy model instances
     model_config = ConfigDict(from_attributes=True)
