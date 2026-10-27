@@ -11,6 +11,9 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.database import Base
 
+# Demo accounts from POST /auth/guest use this reserved domain, which can never receive mail.
+GUEST_EMAIL_DOMAIN = "demo.fitai.example"
+
 
 class User(Base):
     """
@@ -45,3 +48,8 @@ class User(Base):
     equipment = Column(String, nullable=True)
     injuries = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def is_guest(self) -> bool:
+        """True for throwaway demo accounts created without registration."""
+        return (self.email or "").endswith("@" + GUEST_EMAIL_DOMAIN)

@@ -8,7 +8,7 @@ export const SESSION_ID = id(30);
 export const user = {
   id: id(1), email: "lifter@example.com", age: 34, gender: "female", weight_kg: 64.5,
   goal: "strength", level: "intermediate", days_per_week: 3, weekly_session_goal: 3,
-  equipment: "gym", injuries: "",
+  equipment: "gym", injuries: "", is_guest: false,
 };
 const exercise = (slot, name, extra = {}) => ({
   id: slot, exercise_id: slot, name, sets: 3, reps: "6–8", measurement: "reps",
@@ -52,6 +52,7 @@ export async function mockApi(context, { empty = false, fail = false, longNames 
   const recorded = structuredClone(session);
   const requests = [];
   const unexpected = [];
+  let guest = false;
   const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "Authorization, Content-Type", "access-control-allow-methods": "GET, POST, PUT, OPTIONS" };
   await context.route("http://localhost:8000/**", async route => {
     const request = route.request();
@@ -61,8 +62,9 @@ export async function mockApi(context, { empty = false, fail = false, longNames 
     if (method === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     const body = request.postData() ? request.postDataJSON() : null;
     requests.push({ method, path, body });
-    if (path === "/users/me") return json({ ...user, ...(empty ? { goal: null, level: null, equipment: null, days_per_week: null, age: null, weight_kg: null } : {}), ...body });
+    if (path === "/users/me") return json({ ...user, is_guest: guest, ...(empty ? { goal: null, level: null, equipment: null, days_per_week: null, age: null, weight_kg: null } : {}), ...body });
     if (path === "/auth/login" || path === "/auth/register") return json({ access_token: "test-token", token_type: "bearer" });
+    if (path === "/auth/guest") { guest = true; return json({ access_token: "test-token", token_type: "bearer" }); }
     if (path === "/plans/current") return fail ? json({ detail: "Plan unavailable" }, 500) : empty ? json({ detail: "No plan" }, 404) : json(active);
     if (path === "/plans") return json(empty ? [] : [active, { ...active, id: id(11), version: 2, is_active: false }]);
     if (path === "/plans/proposals") return json(method === "GET" ? empty ? [] : [proposal] : proposal);

@@ -138,6 +138,15 @@ test("long plan and exercise names stay inside the viewport", async ({ page, con
   await layoutIsHealthy(page, testInfo);
 });
 
+test("demo button opens a guest account and labels it", async ({ context, page, api }) => {
+  await context.addInitScript(() => localStorage.removeItem("token"));
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Try the demo" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your plan", exact: true })).toBeVisible();
+  await expect(page.locator(".demo-banner")).toContainText("demo account with sample data");
+  expect(api.requests.filter(r => r.path === "/auth/guest")).toHaveLength(1);
+});
+
 test("empty and failed API states remain readable", async ({ context, page }, testInfo) => {
   await mockApi(context, { empty: true });
   await page.goto("/");

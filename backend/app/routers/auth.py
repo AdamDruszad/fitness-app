@@ -1,18 +1,19 @@
 """
 Authentication Router.
 
-Endpoints for user account registration and login authentication,
-issuing JWT access bearer tokens.
+Endpoints for user account registration, login authentication and demo
+guest sessions, issuing JWT access bearer tokens.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, GUEST_EMAIL_DOMAIN
 from app.ratelimit import rate_limit
 from app.schemas.user import UserRegister, UserLogin, Token
 from app.services.auth import hash_password, verify_password, create_access_token
+from app.services.demo import create_guest
 
 router = APIRouter()
 
@@ -20,6 +21,7 @@ router = APIRouter()
 # address gets a small budget per sliding window.
 REGISTER_LIMIT = rate_limit("auth.register", limit=5, window_seconds=300)
 LOGIN_LIMIT = rate_limit("auth.login", limit=10, window_seconds=300)
+GUEST_LIMIT = rate_limit("auth.guest", limit=5, window_seconds=300)
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_200_OK)
@@ -43,6 +45,12 @@ def register(
         Token: JWT access token for immediate client authentication.
     """
     email_lower = body.email.lower().strip()
+    # The demo domain marks guest accounts, so real registrations may not use it.
+    if email_lower.endswith("@" + GUEST_EMAIL_DOMAIN):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use your own email address"
+        )
     # Check if a user with this normalized email already exists
     if db.query(User).filter(User.email == email_lower).first():
         raise HTTPException(
@@ -96,4 +104,27 @@ def login(
             detail="You're not registered or wrong password"
         )
 
+    return Token(access_token=create_access_token(str(user.id)))
+
+
+@router.post("/guest", response_model=Token, status_code=status.HTTP_200_OK)
+def guest(
+    db: Session = Depends(get_db),
+    _rate: None = Depends(GUEST_LIMIT),
+) -> Token:
+    """
+    Starts a demo session in a new guest account with a sample plan and history.
+
+    Every call creates a separate account, so visitors never see each other's changes.
+
+    Args:
+        db: Scoped database session.
+
+    Raises:
+        HTTPException: 429 Too Many Requests if the client exhausted its demo budget.
+
+    Returns:
+        Token: JWT access token for the new guest account.
+    """
+    user = create_guest(db)
     return Token(access_token=create_access_token(str(user.id)))

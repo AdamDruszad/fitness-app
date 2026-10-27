@@ -16,6 +16,10 @@
 .app-header-inner { display: flex; align-items: center; gap: var(--s-8); min-height: var(--header-h); }
 .header-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
 
+/* Shown only to guest accounts opened from "Try the demo". */
+.demo-banner { border-bottom: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--text); font-size: var(--fs-sm); }
+.demo-banner .shell { padding-block: var(--s-2); }
+
 .brand {
   display: inline-flex;
   align-items: center;

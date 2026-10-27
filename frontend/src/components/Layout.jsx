@@ -18,7 +18,7 @@ const NAV_ITEMS = [
  * width: "wide" (default, 1120px) or "narrow" (760px reading column).
  */
 export default function Layout({ children, contentClassName = "", width = "wide" }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -47,6 +47,11 @@ export default function Layout({ children, contentClassName = "", width = "wide"
           </div>
         </div>
       </header>
+      {user?.is_guest && (
+        <div className="demo-banner" role="note">
+          <p className="shell">You're in a demo account with sample data. Sign out and register to keep your own training.</p>
+        </div>
+      )}
       <main id="main-content" tabIndex={-1} className={`page${width === "narrow" ? " page--narrow" : ""} ${contentClassName}`.trim()}>{children}</main>
       <nav className="tab-bar" aria-label="Mobile navigation">{navigation}</nav>
     </div>

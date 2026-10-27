@@ -48,6 +48,8 @@
 .auth-intro { margin-top: calc(var(--s-3) * -1); font-size: var(--fs-md); }
 .auth-form { display: grid; gap: var(--s-4); }
 .auth-form .btn { margin-top: var(--s-2); }
+.auth-demo { display: grid; gap: var(--s-3); }
+.auth-demo p { font-size: var(--fs-sm); }
 .auth-footer { color: var(--text-2); font-size: var(--fs-sm); padding-top: var(--s-4); border-top: 1px solid var(--line); }
 
 @media (max-width: 899px) {
